@@ -59,7 +59,7 @@ class ShopController extends Controller
                 $query->orderBy('created_at', 'desc');
         }
 
-        $products = $query->paginate(12);
+        $products = $query->paginate(10);
         $categories = Category::all();
 
         return view('shop.index', compact('products', 'categories'));

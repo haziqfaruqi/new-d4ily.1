@@ -18,34 +18,10 @@
 
 <body class="bg-white">
 
-    <!-- Navigation -->
-    <nav class="sticky top-0 z-50 border-b backdrop-blur-md border-zinc-200 bg-white/90">
-        <div class="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-8">
-                <a href="{{ route('shop.index') }}" class="text-xl font-bold tracking-tighter text-zinc-900">d4ily.1</a>
-                <div class="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600">
-                    <a href="{{ route('shop.index') }}" class="transition-colors hover:text-zinc-900">Shop</a>
-                    <a href="{{ route('shop.recommendations') }}"
-                        class="transition-colors hover:text-zinc-900 flex items-center gap-1">
-                        <i data-lucide="sparkles" class="w-4 h-4"></i>
-                        For You
-                    </a>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4">
-                <a href="{{ route('shop.index') }}" class="p-1 text-zinc-600 hover:text-zinc-900">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                </a>
-                <a href="/api/cart" class="relative p-1 text-zinc-600 hover:text-zinc-900">
-                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-                </a>
-            </div>
-        </div>
-    </nav>
+@include('partials.navigation')
 
     <!-- Product Content -->
-    <main class="mx-auto max-w-7xl px-6 py-10">
+    <main class="mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
         <!-- Breadcrumbs -->
         <div class="flex items-center gap-2 text-xs text-zinc-500 mb-8">
             <a href="{{ route('shop.index') }}" class="hover:text-zinc-900">Home</a>
@@ -56,12 +32,12 @@
             <span class="font-medium text-zinc-900">{{ $product->name }}</span>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             <!-- Left: Gallery -->
             <div class="lg:col-span-7 flex flex-col gap-4">
                 <div
-                    class="relative aspect-[4/3] w-full overflow-hidden rounded-lg border group border-zinc-200 bg-zinc-100">
-                    <img id="main-image" src="{{ $product->images[0] ?? 'https://via.placeholder.com/800' }}"
+                    class="relative aspect-[2/1] w-full overflow-hidden rounded-lg border group border-zinc-200 bg-zinc-100">
+                    <img id="main-image" src="{{ $product->images[0] ?? 'https://via.placeholder.com/600' }}"
                         alt="{{ $product->name }}"
                         class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
                     @if($product->stock == 1)
@@ -72,10 +48,10 @@
                     @endif
                 </div>
                 @if(isset($product->images) && is_array($product->images) && count($product->images) > 1)
-                    <div class="grid grid-cols-4 gap-4">
-                        @foreach(array_slice($product->images, 0, 4) as $image)
+                    <div class="grid grid-cols-3 gap-3">
+                        @foreach(array_slice($product->images, 0, 3) as $image)
                             <button onclick="document.getElementById('main-image').src='{{ $image }}'"
-                                class="aspect-square overflow-hidden rounded-md border border-zinc-200 hover:border-zinc-400 transition-colors">
+                                class="aspect-[1/1] overflow-hidden rounded-md border border-zinc-200 hover:border-zinc-400 transition-colors">
                                 <img src="{{ $image }}" class="h-full w-full object-cover">
                             </button>
                         @endforeach
@@ -92,7 +68,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-2xl font-bold tracking-tight text-zinc-900">
-                            ${{ number_format($product->price, 2) }}</p>
+                            RM{{ number_format($product->price, 2) }}</p>
                     </div>
                 </div>
 
@@ -107,22 +83,22 @@
                             <span class="block text-xs text-zinc-500">Size</span>
                             <span class="block text-sm font-medium text-zinc-900">{{ $product->size }}</span>
                         </div>
-                        <div>
-                            <span class="block text-xs text-zinc-500">Color</span>
-                            <span class="block text-sm font-medium text-zinc-900">{{ $product->color }}</span>
-                        </div>
+                        @if($product->material)
+                            <div>
+                                <span class="block text-xs text-zinc-500">Material</span>
+                                <span class="block text-sm font-medium text-zinc-900">{{ $product->material }}</span>
+                            </div>
+                        @endif
                         <div>
                             <span class="block text-xs text-zinc-500">Stock</span>
-                            <span
-                                class="block text-sm font-medium {{ $product->stock > 0 ? 'text-emerald-600' : 'text-red-600' }}">
-                                {{ $product->stock > 0 ? 'In Stock' : 'Sold Out' }}
-                            </span>
+                            <span class="block text-sm font-medium text-zinc-900">{{ $product->stock }} available</span>
                         </div>
                     </div>
-                </div>
 
-                <div class="prose prose-sm leading-relaxed text-zinc-600">
-                    <p>{{ $product->description }}</p>
+                    <div>
+                        <span class="block text-xs text-zinc-500 mb-2">Description</span>
+                        <p class="text-sm text-zinc-700 leading-relaxed">{{ $product->description }}</p>
+                    </div>
                 </div>
 
                 <div class="mt-auto pt-8 space-y-3">
@@ -138,65 +114,91 @@
                         </button>
                     </div>
 
-                    <button id="find-similar-btn" onclick="toggleSimilarItems()"
-                        class="w-full h-11 border text-sm font-medium rounded-md flex items-center justify-center gap-2 transition-colors bg-indigo-50 text-indigo-700 border-indigo-100 hover:bg-indigo-100">
-                        <i data-lucide="sparkles" class="w-4 h-4"></i>
-                        Find Similar Items
-                    </button>
-                    <p class="text-[10px] text-center text-zinc-400">AI-powered suggestions based on visual similarity
-                    </p>
+                    @if(isset($similarProducts) && $similarProducts->count() > 0)
+                        <button id="find-similar-btn" onclick="toggleSimilarItems()"
+                            class="w-full transition-colors flex hover:bg-indigo-600 text-sm font-medium text-white bg-indigo-500 h-11 rounded-md shadow-sm gap-x-2 gap-y-2 items-center justify-center">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span id="similar-btn-text">Find Similar Items</span>
+                            <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="similar-btn-icon"></i>
+                        </button>
+                    @endif
                 </div>
-            </div>
         </div>
+    </main>
 
-        <!-- Similar Items Section -->
-        @if($similarProducts && $similarProducts->count() > 0)
-            <div id="similar-items-section" class="mt-24 hidden">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-                        <h2 class="text-lg font-semibold tracking-tight text-zinc-900">Similar Thrift Finds</h2>
+    <!-- Similar Items Results Section - Full Width -->
+    @if(isset($similarProducts) && $similarProducts->count() > 0)
+        <section id="similar-items-section" class="hidden bg-white border-t border-zinc-200">
+            <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+                <div class="max-w-7xl mx-auto">
+                    <h2 class="text-2xl font-bold text-zinc-900 mb-8 text-center">Similar Items</h2>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 lg:gap-6">
+                        @foreach($similarProducts as $similarProduct)
+                            <a href="{{ route('shop.product', $similarProduct->id) }}" class="group">
+                                <div class="relative aspect-[3/4] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 mb-3">
+                                    <img src="{{ $similarProduct->images[0] ?? 'https://via.placeholder.com/300' }}"
+                                        alt="{{ $similarProduct->name }}"
+                                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                    @if($similarProduct->featured)
+                                        <div class="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded bg-indigo-600 text-white">Featured</div>
+                                    @endif
+                                    <div class="absolute bottom-2 right-2 px-2 py-1 text-xs font-medium rounded backdrop-blur bg-white/90 text-zinc-900">{{ ucfirst($similarProduct->condition) }}</div>
+                                </div>
+                                <h3 class="text-sm font-medium text-zinc-900 group-hover:text-indigo-600 transition-colors line-clamp-2 mb-1">{{ $similarProduct->name }}</h3>
+                                <p class="text-xs text-zinc-500 mb-1">{{ $similarProduct->brand }}</p>
+                                <p class="text-sm font-semibold text-zinc-900">RM{{ number_format($similarProduct->price, 2) }}</p>
+                            </a>
+                        @endforeach
                     </div>
                 </div>
-
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    @foreach($similarProducts as $similar)
-                        <a href="{{ route('shop.product', $similar->id) }}" class="group">
-                            <div class="relative aspect-[3/4] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
-                                <img src="{{ $similar->images[0] ?? 'https://via.placeholder.com/400' }}"
-                                    alt="{{ $similar->name }}"
-                                    class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
-                                <div
-                                    class="absolute bottom-2 left-2 inline-flex items-center rounded px-2 py-0.5 text-[10px] font-medium backdrop-blur bg-indigo-600/90 text-white">
-                                    Similar
-                                </div>
-                            </div>
-                            <div class="mt-3">
-                                <h3 class="text-sm font-medium group-hover:text-indigo-600 truncate text-zinc-900">
-                                    {{ $similar->name }}
-                                </h3>
-                                <p class="text-xs text-zinc-500">{{ $similar->brand }}</p>
-                                <p class="mt-1 text-sm font-medium text-zinc-900">${{ number_format($similar->price, 2) }}</p>
-                            </div>
-                        </a>
-                    @endforeach
-                </div>
             </div>
-        @endif
-    </main>
+        </section>
+    @endif
 
     <script>
         lucide.createIcons();
+
+        // Update cart count
+        async function updateCartCount() {
+            try {
+                const response = await fetch('/api/cart');
+                if (response.ok) {
+                    const cart = await response.json();
+                    const totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
+                    const cartCountElement = document.getElementById('cart-count');
+                    if (cartCountElement) {
+                        cartCountElement.textContent = totalItems;
+                        cartCountElement.style.display = totalItems > 0 ? 'flex' : 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating cart count:', error);
+            }
+        }
+
+        // Update cart count on page load
+        updateCartCount();
+
+        // Update cart count after adding items
+        document.addEventListener('cartUpdated', updateCartCount);
 
         const productId = {{ $product->id }};
 
         function toggleSimilarItems() {
             const section = document.getElementById('similar-items-section');
+            const btnText = document.getElementById('similar-btn-text');
+            const btnIcon = document.getElementById('similar-btn-icon');
+
             if (section.classList.contains('hidden')) {
                 section.classList.remove('hidden');
+                btnText.textContent = 'Hide Similar Items';
+                btnIcon.style.transform = 'rotate(180deg)';
                 section.scrollIntoView({ behavior: 'smooth' });
             } else {
                 section.classList.add('hidden');
+                btnText.textContent = 'Find Similar Items';
+                btnIcon.style.transform = 'rotate(0deg)';
             }
         }
 
@@ -208,7 +210,7 @@
             lucide.createIcons();
 
             try {
-                const response = await fetch('{{ route("cart.add", $product->id) }}', {
+                const response = await fetch(`{{ route('cart.add', $product->id) }}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -221,8 +223,17 @@
                 });
 
                 if (response.ok) {
+                    const data = await response.json();
                     btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Added!';
                     lucide.createIcons();
+
+                    // Update cart count immediately
+                    const cartCountElement = document.getElementById('cart-count');
+                    if (cartCountElement) {
+                        cartCountElement.textContent = data.cart_count;
+                        cartCountElement.style.display = data.cart_count > 0 ? 'flex' : 'none';
+                    }
+
                     setTimeout(() => {
                         btn.innerHTML = originalHTML;
                         btn.disabled = false;
@@ -232,7 +243,8 @@
                     if (response.status === 401) {
                         window.location.href = '{{ route("login") }}';
                     } else {
-                        alert('Failed to add to cart. Please try again.');
+                        const data = await response.json();
+                        alert(data.error || 'Failed to add to cart');
                         btn.innerHTML = originalHTML;
                         btn.disabled = false;
                         lucide.createIcons();
@@ -249,10 +261,10 @@
 
         async function toggleWishlist() {
             const btn = document.getElementById('wishlist-btn');
-            const icon = btn.querySelector('i');
+            const originalHTML = btn.innerHTML;
 
             try {
-                const response = await fetch('{{ route("wishlist.toggle", $product->id) }}', {
+                const response = await fetch(`{{ route('wishlist.toggle', $product->id) }}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -264,24 +276,27 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.wishlisted) {
+                        btn.innerHTML = '<i data-lucide="heart" class="w-5 h-5" fill="currentColor"></i>';
+                        btn.classList.remove('text-zinc-500', 'hover:text-red-500', 'border-zinc-200', 'hover:bg-zinc-50');
                         btn.classList.add('text-red-500', 'border-red-200', 'bg-red-50');
-                        btn.classList.remove('text-zinc-500', 'border-zinc-200', 'hover:bg-zinc-50');
-                        icon.setAttribute('fill', 'currentColor');
                     } else {
+                        btn.innerHTML = '<i data-lucide="heart" class="w-5 h-5"></i>';
                         btn.classList.remove('text-red-500', 'border-red-200', 'bg-red-50');
-                        btn.classList.add('text-zinc-500', 'border-zinc-200', 'hover:bg-zinc-50');
-                        icon.removeAttribute('fill');
+                        btn.classList.add('text-zinc-500', 'hover:text-red-500', 'border-zinc-200', 'hover:bg-zinc-50');
                     }
+                    lucide.createIcons();
                 } else {
                     if (response.status === 401) {
                         window.location.href = '{{ route("login") }}';
+                    } else {
+                        alert('Failed to toggle wishlist');
                     }
                 }
             } catch (error) {
-                console.error(error);
+                console.error('Error:', error);
+                alert('Something went wrong.');
             }
         }
     </script>
 </body>
-
 </html>

@@ -35,7 +35,11 @@ Route::middleware(['customer'])->group(function () {
         Route::post('/cart/add/{productId}', [\App\Http\Controllers\Web\CartController::class, 'addToCart'])->name('cart.add');
         Route::delete('/cart/remove/{itemId}', [\App\Http\Controllers\Web\CartController::class, 'removeFromCart'])->name('cart.remove');
         Route::post('/wishlist/toggle/{productId}', [\App\Http\Controllers\Web\CartController::class, 'toggleWishlist'])->name('wishlist.toggle');
-        Route::get('/cart', [\App\Http\Controllers\Web\CartController::class, 'viewCart'])->name('cart.view');
+        Route::get('/cart', [\App\Http\Controllers\Web\CartController::class, 'viewCart'])->name('cart.index');
+        Route::get('/checkout', [\App\Http\Controllers\Web\CartController::class, 'checkout'])->name('checkout');
+        Route::post('/checkout', [\App\Http\Controllers\Web\CartController::class, 'processCheckout'])->name('checkout.submit');
+        Route::get('/order/confirmation/{orderId}', [\App\Http\Controllers\Web\CartController::class, 'orderConfirmation'])->name('order.confirmation');
+        Route::get('/order/history', [\App\Http\Controllers\Web\CartController::class, 'orderHistory'])->name('order.history');
     });
 });
 
