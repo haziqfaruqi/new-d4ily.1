@@ -45,6 +45,10 @@
                             <i data-lucide="sparkles" class="w-4 h-4"></i>
                             Recommendations
                         </a>
+                        <a href="{{ route('order.history') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
+                            <i data-lucide="clock" class="w-4 h-4"></i>
+                            Order History
+                        </a>
                         <hr class="my-1 border-zinc-200">
                         <form action="{{ route('logout') }}" method="POST">
                             @csrf

@@ -3,7 +3,15 @@
     "allow": [
       "Bash(find:*)",
       "Bash(php artisan make:migration:*)",
-      "Bash(php artisan migrate:*)"
+      "Bash(php artisan migrate:*)",
+      "Bash(composer require:*)",
+      "Bash(php artisan serve:*)",
+      "Bash(php artisan tinker:*)",
+      "Bash(php artisan route:list:*)",
+      "Bash(php artisan route:clear:*)",
+      "Bash(php artisan config:clear:*)",
+      "Bash(php artisan cache:clear:*)",
+      "Bash(php:*)"
     ],
     "deny": [],
     "ask": []

@@ -41,6 +41,10 @@ Route::middleware(['customer'])->group(function () {
         Route::get('/order/confirmation/{orderId}', [\App\Http\Controllers\Web\CartController::class, 'orderConfirmation'])->name('order.confirmation');
         Route::get('/order/history', [\App\Http\Controllers\Web\CartController::class, 'orderHistory'])->name('order.history');
     });
+
+    // ToyyibPay Routes
+    Route::post('/toyyibpay/callback', [\App\Http\Controllers\Web\CartController::class, 'toyyibPayCallback'])->name('toyyibpay.callback');
+    Route::get('/cancel-checkout', [\App\Http\Controllers\Web\CartController::class, 'cancelCheckout'])->name('cancel.checkout');
 });
 
 // Admin Routes (Admin only)

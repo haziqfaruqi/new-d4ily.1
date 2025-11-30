@@ -35,7 +35,7 @@
                 <!-- Orders Table -->
                 <div class="bg-white rounded-lg border border-zinc-200">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-xs">
+                        <table class="w-full text-sm">
                             <thead class="bg-zinc-50 text-zinc-500">
                                 <tr>
                                     <th class="px-5 py-3 text-left font-medium">Order ID</th>
@@ -62,7 +62,7 @@
                                                                 </td>
                                                                 <td class="px-5 py-3 text-zinc-700">{{ $order->items->count() }} items</td>
                                                                 <td class="px-5 py-3 font-medium text-zinc-900">
-                                                                    ${{ number_format($order->total_price, 2) }}</td>
+                                                                    RM{{ number_format($order->total_price, 2) }}</td>
                                                                 <td class="px-5 py-3">
                                                                     <form action="{{ route('admin.orders.update-status', $order->id) }}"
                                                                         method="POST" class="inline">
@@ -71,8 +71,8 @@
                                                                         <select name="status" onchange="this.form.submit()"
                                                                             class="px-2 py-1 rounded text-[10px] font-medium border-0
                                                                             {{ $order->status === 'delivered' ? 'bg-emerald-50 text-emerald-700' :
-                                    ($order->status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
-                                        ($order->status === 'cancelled' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700')) }}">
+                                                                            ($order->status === 'pending' ? 'bg-yellow-50 text-yellow-700' :
+                                                                            ($order->status === 'cancelled' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700')) }}">
                                                                             <option value="pending" {{ $order->status === 'pending' ? 'selected' : '' }}>Pending</option>
                                                                             <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Processing</option>
                                                                             <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Shipped</option>
@@ -142,7 +142,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-zinc-500">Total Amount</p>
-                            <p class="text-sm font-medium">$${parseFloat(order.total_price).toFixed(2)}</p>
+                            <p class="text-sm font-medium">RM${parseFloat(order.total_price).toFixed(2)}</p>
                         </div>
                     </div>
                     
@@ -158,7 +158,7 @@
                                             <p class="text-xs text-zinc-500">Qty: ${item.quantity}</p>
                                         </div>
                                     </div>
-                                    <p class="text-sm font-medium">$${parseFloat(item.price).toFixed(2)}</p>
+                                    <p class="text-sm font-medium">RM${parseFloat(item.price).toFixed(2)}</p>
                                 </div>
                             `).join('')}
                         </div>

@@ -7,7 +7,10 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\Wishlist;
+use App\Models\Order;
+use App\Services\ToyyibPayService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
@@ -153,7 +156,7 @@ class CartController extends Controller
 
         $request->validate([
             'shipping_address' => 'required|string',
-            'payment_method' => 'required|string',
+            'payment_method' => 'required|string|in:toyyibpay,bank_transfer',
         ]);
 
         try {
@@ -164,9 +167,9 @@ class CartController extends Controller
             $total = $subtotal + $shipping + $tax;
 
             // Create order
-            $order = \App\Models\Order::create([
+            $order = Order::create([
                 'user_id' => auth()->id(),
-                'status' => 'pending',
+                'status' => $request->payment_method === 'toyyibpay' ? 'pending' : 'confirmed',
                 'total_price' => $total,
                 'shipping_address' => $request->shipping_address,
                 'payment_method' => $request->payment_method,
@@ -185,13 +188,62 @@ class CartController extends Controller
                 ]);
             }
 
-            // Clear cart
-            $cart->items()->delete();
-            $cart->delete();
+            if ($request->payment_method === 'toyyibpay') {
+                // Create ToyyibPay bill
+                $toyyibPay = new ToyyibPayService();
 
-            return redirect()->route('order.confirmation', $order->id);
+                // Ensure total is valid and convert to sen (cents)
+                $priceInSen = max(1, (int)round($total * 100)); // Minimum 1 sen
+
+                Log::info('ToyyibPay Price Calculation:', [
+                    'total' => $total,
+                    'price_in_sen' => $priceInSen,
+                    'formatted' => number_format($total, 2)
+                ]);
+
+                $billData = [
+                    'bill_name' => 'Order #' . $order->id,
+                    'bill_description' => 'Payment for your order at Vintage Thrift Shop',
+                    'bill_price' => $priceInSen,
+                    'bill_email' => auth()->user()->email ?? 'customer@example.com',
+                    'bill_phone' => auth()->user()->phone ?? '60123456789',
+                    'bill_amount' => $priceInSen, // The actual amount in sen (cents)
+                    'bill_content_email' => "Thank you for your purchase! Order #" . $order->id,
+                    'bill_reference_no' => $order->id,
+                    'bill_to' => auth()->user()->name ?? 'Customer',
+                    'order_id' => $order->id // Pass order ID for return URL
+                ];
+
+                $billResult = $toyyibPay->createBill($billData);
+
+                if (!$billResult['success']) {
+                    return redirect()->back()->with('error', 'Failed to create payment: ' . $billResult['message']);
+                }
+
+                // Update order with ToyyibPay details
+                $order->update([
+                    'bill_code' => $billResult['bill_code'],
+                    'payment_status' => 'pending'
+                ]);
+
+                // Redirect to ToyyibPay for payment
+                return redirect()->away($billResult['bill_url']);
+            } else {
+                // For bank transfer, mark as confirmed and show confirmation
+                $order->update([
+                    'status' => 'confirmed',
+                    'payment_status' => 'pending'
+                ]);
+
+                // Clear cart
+                $cart->items()->delete();
+                $cart->delete();
+
+                return redirect()->route('order.confirmation', $order->id);
+            }
 
         } catch (\Exception $e) {
+            Log::error('Checkout Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Checkout failed. Please try again.');
         }
     }
@@ -209,7 +261,67 @@ class CartController extends Controller
 
     public function orderHistory()
     {
-        $orders = \App\Models\Order::with('items.product')->where('user_id', auth()->id())->orderBy('created_at', 'desc')->paginate(10);
+        $orders = \App\Models\Order::with('items.product')->where('user_id', auth()->id())->orderBy('created_at', 'desc')->paginate(5);
         return view('shop.order-history', compact('orders'));
+    }
+
+    public function toyyibPayCallback(Request $request)
+    {
+        try {
+            $billCode = $request->input('billcode');
+            $status = $request->input('status_code');
+
+            if (!$billCode) {
+                Log::error('ToyyibPay Callback: Missing bill code');
+                return redirect()->route('shop.index')->with('error', 'Invalid payment notification');
+            }
+
+            // Find the order by bill code
+            $order = Order::where('bill_code', $billCode)->first();
+
+            if (!$order) {
+                Log::error('ToyyibPay Callback: Order not found for bill code ' . $billCode);
+                return redirect()->route('shop.index')->with('error', 'Order not found');
+            }
+
+            // Verify payment with ToyyibPay
+            $toyyibPay = new ToyyibPayService();
+            $verification = $toyyibPay->verifyPayment($billCode, $status);
+
+            if ($verification['success'] && $verification['status'] === 'paid') {
+                // Update order status
+                $order->update([
+                    'status' => 'completed',
+                    'payment_status' => 'paid',
+                    'transaction_id' => $verification['transaction_id'] ?? null
+                ]);
+
+                Log::info('Payment successful for order ' . $order->id);
+
+                return redirect()->route('order.confirmation', $order->id)
+                    ->with('success', 'Payment successful! Thank you for your order.');
+            } else {
+                // Payment failed or was cancelled
+                $order->update([
+                    'status' => 'failed',
+                    'payment_status' => 'failed',
+                    'transaction_id' => $verification['transaction_id'] ?? null
+                ]);
+
+                Log::warning('Payment failed for order ' . $order->id . ': ' . ($verification['message'] ?? 'Unknown error'));
+
+                return redirect()->route('checkout')
+                    ->with('error', 'Payment failed or was cancelled. Please try again.');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('ToyyibPay Callback Error: ' . $e->getMessage());
+            return redirect()->route('shop.index')->with('error', 'Payment verification failed. Please contact support.');
+        }
+    }
+
+    public function cancelCheckout()
+    {
+        return redirect()->route('cart.index')->with('info', 'Payment was cancelled. You can return to your cart and try again.');
     }
 }

@@ -59,7 +59,7 @@
                                         </div>
                                     </td>
                                     <td class="px-5 py-3 text-zinc-700">{{ $product->category->name }}</td>
-                                    <td class="px-5 py-3 font-medium text-zinc-900">${{ number_format($product->price, 2) }}</td>
+                                    <td class="px-5 py-3 font-medium text-zinc-900">RM{{ number_format($product->price, 2) }}</td>
                                     <td class="px-5 py-3">
                                         <span class="px-2 py-1 rounded text-xs font-medium {{ $product->stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700' }}">
                                             {{ $product->stock }} units

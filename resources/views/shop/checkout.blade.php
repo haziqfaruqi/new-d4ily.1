@@ -22,6 +22,8 @@
         </div>
 
         <form method="POST" action="{{ route('checkout.submit') }}" class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+    @csrf
+    <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <!-- Checkout Form -->
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-lg border border-zinc-200 p-6 space-y-6">
@@ -52,17 +54,11 @@
                         </h3>
                         <div class="space-y-3">
                             <label class="flex items-center gap-3 p-4 border border-zinc-200 rounded-md cursor-pointer hover:bg-zinc-50">
-                                <input type="radio" name="payment_method" value="credit_card" class="text-zinc-600" required>
-                                <div class="flex items-center gap-2">
-                                    <i data-lucide="credit-card" class="w-5 h-5"></i>
-                                    <span class="font-medium">Credit Card</span>
-                                </div>
-                            </label>
-                            <label class="flex items-center gap-3 p-4 border border-zinc-200 rounded-md cursor-pointer hover:bg-zinc-50">
-                                <input type="radio" name="payment_method" value="paypal" class="text-zinc-600">
+                                <input type="radio" name="payment_method" value="toyyibpay" class="text-zinc-600" required>
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="wallet" class="w-5 h-5"></i>
-                                    <span class="font-medium">PayPal</span>
+                                    <span class="font-medium">ToyyibPay (Online Payment)</span>
+                                    <span class="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">Recommended</span>
                                 </div>
                             </label>
                             <label class="flex items-center gap-3 p-4 border border-zinc-200 rounded-md cursor-pointer hover:bg-zinc-50">
@@ -142,9 +138,9 @@
                     </div>
 
                     <button type="submit"
-                            class="w-full bg-zinc-900 text-white py-3 px-4 rounded-md font-medium hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2">
+                            class="w-full bg-purple-600 text-white py-3 px-4 rounded-md font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2">
                         <i data-lucide="lock" class="w-4 h-4"></i>
-                        Place Order
+                        <span id="submit-text">Place Order</span>
                     </button>
 
                     <a href="{{ route('cart.index') }}"
@@ -163,7 +159,13 @@
         // Update cart count on page load
         async function updateCartCount() {
             try {
-                const response = await fetch('/api/cart');
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const response = await fetch('/api/cart', {
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
+                    }
+                });
                 if (response.ok) {
                     const cart = await response.json();
                     const totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
@@ -180,6 +182,24 @@
 
         // Update cart count on page load
         updateCartCount();
+
+        // Handle form submission for ToyyibPay
+        document.querySelector('form').addEventListener('submit', async function(e) {
+            const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
+            if (selectedPaymentMethod && selectedPaymentMethod.value === 'toyyibpay') {
+                e.preventDefault();
+                const submitText = document.getElementById('submit-text');
+                const button = e.target.querySelector('button[type="submit"]');
+
+                // Show loading state
+                submitText.textContent = 'Processing...';
+                button.disabled = true;
+                button.classList.add('opacity-75', 'cursor-not-allowed');
+
+                // Continue with normal form submission (Laravel handles CSRF automatically)
+                this.submit();
+            }
+        });
     </script>
 </body>
 </html>

@@ -12,7 +12,13 @@ class Order extends Model
         'status',
         'total_price',
         'shipping_address',
-        'payment_method'
+        'payment_method',
+        'bill_code',
+        'payment_status',
+        'transaction_id',
+        'subtotal',
+        'tax',
+        'shipping'
     ];
 
     public function user()

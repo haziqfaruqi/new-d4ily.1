@@ -29,7 +29,7 @@
                 <!-- Customers Table -->
                 <div class="bg-white rounded-lg border border-zinc-200">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-xs">
+                        <table class="w-full text-sm">
                             <thead class="bg-zinc-50 text-zinc-500">
                                 <tr>
                                     <th class="px-5 py-3 text-left font-medium">Customer</th>
@@ -57,7 +57,7 @@
                                         <td class="px-5 py-3 text-zinc-700">{{ $customer->email }}</td>
                                         <td class="px-5 py-3">
                                             <span
-                                                class="px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 text-[10px] font-medium">
+                                                class="px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 text-xs font-medium">
                                                 {{ $customer->interactions_count }} views
                                             </span>
                                         </td>

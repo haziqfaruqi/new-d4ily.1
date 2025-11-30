@@ -34,9 +34,9 @@
                     <div class="bg-white p-5 rounded-lg border border-zinc-200">
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-sm font-medium text-zinc-500">Total Revenue</span>
-                            <i data-lucide="dollar-sign" class="w-5 h-5 text-zinc-300"></i>
+                            <i data-lucide="coins" class="w-5 h-5 text-zinc-300"></i>
                         </div>
-                        <p class="text-2xl font-semibold text-zinc-900">${{ number_format($stats['total_revenue'], 2) }}
+                        <p class="text-2xl font-semibold text-zinc-900">RM{{ number_format($stats['total_revenue'], 2) }}
                         </p>
                     </div>
                     <div class="bg-white p-5 rounded-lg border border-zinc-200">
@@ -91,7 +91,7 @@
                                             </span>
                                         </td>
                                         <td class="px-5 py-3 text-right font-medium text-zinc-900">
-                                            ${{ number_format($order->total_price, 2) }}</td>
+                                            RM{{ number_format($order->total_price, 2) }}</td>
                                         <td class="px-5 py-3 text-right text-zinc-500">
                                             {{ $order->created_at->format('M d, Y') }}</td>
                                     </tr>

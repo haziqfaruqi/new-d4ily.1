@@ -14,12 +14,37 @@
 @include('partials.navigation')
 
     <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div class="text-center mb-12">
-            <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-6">
-                <i data-lucide="check-circle" class="w-10 h-10 text-green-600"></i>
+        @if($order->payment_method === 'toyyibpay')
+        <!-- Success Banner -->
+        <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg p-6 mb-8">
+            <div class="flex items-center justify-center gap-4 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full">
+                    <i data-lucide="check-circle" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold mb-2">Payment Successful!</h1>
+                    <p class="text-purple-100">Thank you for your purchase. Payment processed via ToyyibPay.</p>
+                </div>
             </div>
-            <h1 class="text-3xl font-bold text-zinc-900 mb-4">Order Confirmed!</h1>
-            <p class="text-lg text-zinc-600">Thank you for your purchase. Your order has been placed successfully.</p>
+        </div>
+        @else
+        <!-- Order Confirmation Banner -->
+        <div class="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg p-6 mb-8">
+            <div class="flex items-center justify-center gap-4 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full">
+                    <i data-lucide="shopping-bag" class="w-8 h-8"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold mb-2">Order Confirmed!</h1>
+                    <p class="text-green-100">Thank you for your purchase. Please complete bank transfer payment.</p>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        <div class="text-center mb-12">
+            <h2 class="text-2xl font-bold text-zinc-900 mb-2">Order Confirmed</h2>
+            <p class="text-lg text-zinc-600">Your order #{{ str_pad($order->id, 6, '0', STR_PAD_LEFT) }} has been placed successfully.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
@@ -43,13 +68,46 @@
 
                     <div class="flex justify-between items-center pb-4 border-b">
                         <span class="text-sm text-zinc-600">Status</span>
-                        <span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                        @if($order->status === 'completed' && $order->payment_status === 'paid')
+                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Paid</span>
+                        @else
+                            <span class="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Processing</span>
+                        @endif
                     </div>
 
                     <div class="flex justify-between items-center pb-4 border-b">
                         <span class="text-sm text-zinc-600">Payment Method</span>
-                        <span class="font-medium text-zinc-900">{{ str_replace('_', ' ', ucfirst($order->payment_method)) }}</span>
+                        <span class="font-medium text-zinc-900">
+                            @if($order->payment_method === 'toyyibpay')
+                                ToyyibPay
+                            @else
+                                Bank Transfer
+                            @endif
+                        </span>
                     </div>
+
+                    @if($order->payment_method === 'toyyibpay')
+                        @if($order->bill_code)
+                        <div class="flex justify-between items-center pb-4 border-b">
+                            <span class="text-sm text-zinc-600">Payment Reference</span>
+                            <span class="font-mono text-sm text-purple-600">{{ $order->bill_code }}</span>
+                        </div>
+                        @endif
+
+                        @if($order->transaction_id)
+                        <div class="flex justify-between items-center pb-4 border-b">
+                            <span class="text-sm text-zinc-600">Transaction ID</span>
+                            <span class="font-mono text-sm text-zinc-900">{{ $order->transaction_id }}</span>
+                        </div>
+                        @endif
+                    @else
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-4">
+                            <p class="text-sm text-yellow-800">
+                                <i data-lucide="info" class="w-4 h-4 inline mr-2"></i>
+                                Please complete your payment via bank transfer. The order will be processed once payment is confirmed.
+                            </p>
+                        </div>
+                    @endif
 
                     <div class="pb-4 border-b">
                         <span class="text-sm text-zinc-600 block mb-2">Shipping Address</span>
@@ -106,6 +164,26 @@
                 </div>
             </div>
         </div>
+
+        {{-- @if($order->payment_method === 'toyyibpay' && $order->payment_status !== 'paid')
+            <!-- ToyyibPay Manual Return Instructions -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="info" class="w-5 h-5 text-blue-600 mt-0.5"></i>
+                    <div>
+                        <h3 class="font-medium text-blue-900 mb-1">Payment Instructions</h3>
+                        <p class="text-sm text-blue-800">
+                            If you're not automatically redirected back after completing your payment, please click the button below to return to your order confirmation.
+                        </p>
+                        <a href="{{ route('order.confirmation', $order->id) }}"
+                           class="inline-flex items-center gap-2 mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            Return to Order Confirmation
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif --}}
 
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row gap-4 mt-12 justify-center">

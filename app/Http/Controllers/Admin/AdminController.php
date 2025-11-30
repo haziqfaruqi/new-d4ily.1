@@ -26,7 +26,7 @@ class AdminController extends Controller
 
     public function inventory()
     {
-        $products = Product::with('category')->paginate(15);
+        $products = Product::with('category')->paginate(10);
         $categories = Category::all();
 
         return view('admin.inventory', compact('products', 'categories'));
@@ -34,7 +34,7 @@ class AdminController extends Controller
 
     public function orders()
     {
-        $orders = Order::with('user', 'items.product')->latest()->paginate(20);
+        $orders = Order::with('user', 'items.product')->latest()->paginate(15);
 
         return view('admin.orders', compact('orders'));
     }
