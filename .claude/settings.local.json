@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(php artisan make:migration:*)",
+      "Bash(php artisan migrate:*)"
     ],
     "deny": [],
     "ask": []

@@ -91,13 +91,38 @@ class CartController extends Controller
 
     public function viewCart()
     {
-        $cart = Cart::with('items.product')->where('user_id', auth()->id())->first();
+        $cart = Cart::with(['items.product'])->where('user_id', auth()->id())->first();
+
+        // Fix cart items without prices
+        if ($cart) {
+            CartItem::where('cart_id', $cart->id)
+                ->where(function ($query) {
+                    $query->whereNull('price')->orWhere('price', 0);
+                })
+                ->each(function ($item) {
+                    $item->price = $item->product->price;
+                    $item->save();
+                });
+        }
+
         return view('shop.cart', compact('cart'));
     }
 
     public function checkout()
     {
         $cart = Cart::with(['items.product'])->where('user_id', auth()->id())->first();
+
+        // Fix cart items without prices
+        if ($cart) {
+            CartItem::where('cart_id', $cart->id)
+                ->where(function ($query) {
+                    $query->whereNull('price')->orWhere('price', 0);
+                })
+                ->each(function ($item) {
+                    $item->price = $item->product->price;
+                    $item->save();
+                });
+        }
 
         if (!$cart || $cart->items->count() === 0) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty');
@@ -109,6 +134,18 @@ class CartController extends Controller
     public function processCheckout(Request $request)
     {
         $cart = Cart::with('items.product')->where('user_id', auth()->id())->first();
+
+        // Fix cart items without prices
+        if ($cart) {
+            CartItem::where('cart_id', $cart->id)
+                ->where(function ($query) {
+                    $query->whereNull('price')->orWhere('price', 0);
+                })
+                ->each(function ($item) {
+                    $item->price = $item->product->price;
+                    $item->save();
+                });
+        }
 
         if (!$cart || $cart->items->count() === 0) {
             return redirect()->route('cart.index')->with('error', 'Your cart is empty');

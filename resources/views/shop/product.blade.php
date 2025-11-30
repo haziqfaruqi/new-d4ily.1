@@ -126,27 +126,33 @@
         </div>
     </main>
 
-    <!-- Similar Items Results Section - Full Width -->
+    <!-- Similar Items Results Section - Enhanced -->
     @if(isset($similarProducts) && $similarProducts->count() > 0)
-        <section id="similar-items-section" class="hidden bg-white border-t border-zinc-200">
+        <section id="similar-items-section" class="hidden transition-all duration-500 bg-zinc-50">
+            <div class="border-t border-zinc-200"></div>
             <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
                 <div class="max-w-7xl mx-auto">
-                    <h2 class="text-2xl font-bold text-zinc-900 mb-8 text-center">Similar Items</h2>
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-2xl font-bold text-zinc-900">Similar Items</h2>
+                        <button onclick="toggleSimilarItems()"
+                                class="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors hidden">
+                        </button>
+                    </div>
 
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 lg:gap-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                         @foreach($similarProducts as $similarProduct)
-                            <a href="{{ route('shop.product', $similarProduct->id) }}" class="group">
-                                <div class="relative aspect-[3/4] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 mb-3">
+                            <a href="{{ route('shop.product', $similarProduct->id) }}" class="group transition-all duration-500 transform hover:-translate-y-1">
+                                <div class="relative aspect-[3/4] overflow-hidden rounded-lg border border-zinc-200 bg-white mb-4 shadow-sm hover:shadow-md transition-all duration-500">
                                     <img src="{{ $similarProduct->images[0] ?? 'https://via.placeholder.com/300' }}"
                                         alt="{{ $similarProduct->name }}"
                                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
                                     @if($similarProduct->featured)
                                         <div class="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded bg-indigo-600 text-white">Featured</div>
                                     @endif
-                                    <div class="absolute bottom-2 right-2 px-2 py-1 text-xs font-medium rounded backdrop-blur bg-white/90 text-zinc-900">{{ ucfirst($similarProduct->condition) }}</div>
+                                    <div class="absolute bottom-2 right-2 px-2 py-1 text-xs font-medium rounded backdrop-blur bg-white/90 text-zinc-900 border border-zinc-200">{{ ucfirst($similarProduct->condition) }}</div>
                                 </div>
                                 <h3 class="text-sm font-medium text-zinc-900 group-hover:text-indigo-600 transition-colors line-clamp-2 mb-1">{{ $similarProduct->name }}</h3>
-                                <p class="text-xs text-zinc-500 mb-1">{{ $similarProduct->brand }}</p>
+                                <p class="text-xs text-zinc-500 mb-2">{{ $similarProduct->brand }}</p>
                                 <p class="text-sm font-semibold text-zinc-900">RM{{ number_format($similarProduct->price, 2) }}</p>
                             </a>
                         @endforeach
@@ -189,16 +195,19 @@
             const section = document.getElementById('similar-items-section');
             const btnText = document.getElementById('similar-btn-text');
             const btnIcon = document.getElementById('similar-btn-icon');
+            const hideButton = document.querySelector('#similar-items-section button');
 
             if (section.classList.contains('hidden')) {
                 section.classList.remove('hidden');
                 btnText.textContent = 'Hide Similar Items';
                 btnIcon.style.transform = 'rotate(180deg)';
+                hideButton.classList.remove('hidden');
                 section.scrollIntoView({ behavior: 'smooth' });
             } else {
                 section.classList.add('hidden');
                 btnText.textContent = 'Find Similar Items';
                 btnIcon.style.transform = 'rotate(0deg)';
+                hideButton.classList.add('hidden');
             }
         }
 

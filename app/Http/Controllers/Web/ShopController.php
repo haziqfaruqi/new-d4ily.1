@@ -62,7 +62,13 @@ class ShopController extends Controller
         $products = $query->paginate(10);
         $categories = Category::all();
 
-        return view('shop.index', compact('products', 'categories'));
+        // Get cart data for navigation
+        $cart = null;
+        if (auth()->check()) {
+            $cart = \App\Models\Cart::with('items.product')->where('user_id', auth()->id())->first();
+        }
+
+        return view('shop.index', compact('products', 'categories', 'cart'));
     }
 
     public function show($id)
@@ -87,7 +93,13 @@ class ShopController extends Controller
                 ->exists();
         }
 
-        return view('shop.product', compact('product', 'similarProducts', 'isWishlisted'));
+        // Get cart data for navigation
+        $cart = null;
+        if (auth()->check()) {
+            $cart = \App\Models\Cart::with('items.product')->where('user_id', auth()->id())->first();
+        }
+
+        return view('shop.product', compact('product', 'similarProducts', 'isWishlisted', 'cart'));
     }
     public function recommendations(Request $request)
     {
@@ -140,7 +152,7 @@ class ShopController extends Controller
         return view('shop.recommendations', compact('products'));
     }
 
-    protected function getSimilarProducts($productId, $limit = 8)
+    protected function getSimilarProducts($productId, $limit = 10)
     {
         try {
             $aiServiceUrl = env('AI_SERVICE_URL', 'http://localhost:8000');
