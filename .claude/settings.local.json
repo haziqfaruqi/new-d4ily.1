@@ -11,7 +11,13 @@
       "Bash(php artisan route:clear:*)",
       "Bash(php artisan config:clear:*)",
       "Bash(php artisan cache:clear:*)",
-      "Bash(php:*)"
+      "Bash(php:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(wmic:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []
