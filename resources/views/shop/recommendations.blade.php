@@ -136,7 +136,7 @@
                             {{ $product->name }}
                         </h3>
                         <p class="text-xs text-zinc-500 mt-0.5">{{ $product->brand }}</p>
-                        <p class="text-sm font-semibold text-zinc-900 mt-1">${{ number_format($product->price, 2) }}</p>
+                        <p class="text-sm font-semibold text-zinc-900 mt-1">RM{{ number_format($product->price, 2) }}</p>
                     </a>
                 @endforeach
             </div>
