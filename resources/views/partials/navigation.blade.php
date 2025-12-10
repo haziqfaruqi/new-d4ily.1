@@ -3,6 +3,7 @@
         <div class="flex items-center gap-8">
             <a href="{{ route('shop.index') }}" class="text-2xl font-bold tracking-tighter text-zinc-900">d4ily.1</a>
             <div class="hidden md:flex items-center gap-6 text-base font-medium text-zinc-600">
+                <a href="{{ route('landing') }}" class="transition-colors hover:text-zinc-900">Home</a>
                 <a href="{{ route('shop.index') }}" class="transition-colors hover:text-zinc-900">Shop</a>
                 @auth
                     <a href="{{ route('shop.recommendations') }}" class="transition-colors hover:text-zinc-900 flex items-center gap-1.5">

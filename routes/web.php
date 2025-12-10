@@ -13,9 +13,8 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return redirect()->route('shop.index');
-});
+Route::get('/', [\App\Http\Controllers\Web\LandingController::class, 'index'])->name('landing');
+Route::get('/landing', [\App\Http\Controllers\Web\LandingController::class, 'index'])->name('landing');
 
 // Authentication Routes
 Route::get('/login', [\App\Http\Controllers\Auth\AuthController::class, 'showLogin'])->name('login');
