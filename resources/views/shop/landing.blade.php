@@ -252,30 +252,48 @@
 </section>
 
 <!-- CTA Section -->
-<section class="py-16 bg-gradient-to-br from-purple-600 to-blue-600 text-white">
+<section
+  class="relative py-16 text-stone-800"
+  style="
+    background-color: #CBBFA2;
+    background-image: repeating-linear-gradient(
+      90deg,
+      #a1b26c 0px,
+      #a1b26c 50px,
+      #94d6f2 50px,
+      #94d6f2 100px
+    );
+  "
+>
+  <div class="relative z-10">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl sm:text-4xl font-bold mb-6">Ready to Find Your Vintage Treasure?</h2>
-        <p class="text-xl mb-8 text-purple-100">
+        <h2 class="text-3xl sm:text-4xl font-bold mb-6" style="color: #D65A48;">Ready to Find Your Vintage Treasure?</h2>
+        <p class="text-xl mb-8">
             Join thousands of fashion lovers who are making sustainable choices every day
         </p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             @guest
-                <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-white text-purple-700 rounded-full font-semibold hover:bg-yellow-100 transition-all">
+                <a href="{{ route('register') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-stone-800 text-white rounded-full font-semibold hover:bg-[#D65A48] transition-all">
                     Sign Up & Start Shopping
                 </a>
-                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-transparent border-2 border-white text-white rounded-full font-semibold hover:bg-white hover:text-purple-700 transition-all">
+                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-transparent border-2 border-stone-800 text-stone-800 rounded-full font-semibold hover:bg-stone-800 hover:text-white transition-all">
                     Browse Collection
                 </a>
             @else
-                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-white text-purple-700 rounded-full font-semibold hover:bg-yellow-100 transition-all">
+                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-stone-800 text-white rounded-full font-semibold hover:bg-[#D65A48] transition-all">
                     Continue Shopping
                 </a>
-                <a href="{{ route('shop.recommendations') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-transparent border-2 border-white text-white rounded-full font-semibold hover:bg-white hover:text-purple-700 transition-all">
+                <a href="{{ route('shop.recommendations') }}" class="inline-flex items-center gap-2 px-8 py-3 bg-transparent border-2 border-stone-800 text-stone-800 rounded-full font-semibold hover:bg-stone-800 hover:text-white transition-all">
                     Get Personalized Recommendations
                 </a>
             @endguest
         </div>
     </div>
+  </div>
+
+  <div class="absolute inset-0 pointer-events-none opacity-20 mix-blend-multiply"
+       style="background-image: url('https://grainy-gradients.vercel.app/noise.svg');">
+  </div>
 </section>
 
 <!-- Footer -->
