@@ -18,11 +18,13 @@ class Product extends Model
         'brand',
         'color',
         'images',
+        'is_available',
     ];
 
     protected $casts = [
         'images' => 'array',
         'price' => 'decimal:2',
+        'is_available' => 'boolean',
     ];
 
     public function category()
@@ -33,5 +35,26 @@ class Product extends Model
     public function interactions()
     {
         return $this->hasMany(Interaction::class);
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * Scope a query to only include available products (not sold)
+     */
+    public function scopeAvailable($query)
+    {
+        return $query->where('is_available', true);
+    }
+
+    /**
+     * Scope a query to only include sold products
+     */
+    public function scopeSold($query)
+    {
+        return $query->where('is_available', false);
     }
 }

@@ -12,7 +12,9 @@ class CartController extends Controller
 {
     public function index(Request $request)
     {
-        $cart = Cart::with('items.product')->firstOrCreate([
+        $cart = Cart::with(['items.product' => function($query) {
+            $query->where('is_available', true);
+        }])->firstOrCreate([
             'user_id' => $request->user()->id
         ]);
 

@@ -18,7 +18,8 @@
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
       "Bash(powershell:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

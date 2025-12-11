@@ -13,7 +13,7 @@ class ShopController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with('category')->where('stock', '>', 0);
+        $query = Product::with('category')->available()->where('stock', '>', 0);
 
         // Filter by category
         if ($request->has('category') && $request->category) {
@@ -179,6 +179,7 @@ class ShopController extends Controller
         // Fallback: get products from same category
         $product = Product::find($productId);
         return Product::with('category')
+            ->available()
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $productId)
             ->where('stock', '>', 0)

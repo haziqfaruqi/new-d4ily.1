@@ -11,6 +11,7 @@ use App\Models\Order;
 use App\Services\ToyyibPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
@@ -98,7 +99,7 @@ class CartController extends Controller
     {
         $cart = Cart::with(['items.product'])->where('user_id', auth()->id())->first();
 
-        // Fix cart items without prices
+        // Fix cart items without prices and remove items with unavailable products
         if ($cart) {
             CartItem::where('cart_id', $cart->id)
                 ->where(function ($query) {
@@ -108,6 +109,13 @@ class CartController extends Controller
                     $item->price = $item->product->price;
                     $item->save();
                 });
+
+            // Remove items where the product is no longer available
+            CartItem::where('cart_id', $cart->id)
+                ->whereHas('product', function ($query) {
+                    $query->where('is_available', false);
+                })
+                ->delete();
         }
 
         return view('shop.cart', compact('cart'));
@@ -117,7 +125,7 @@ class CartController extends Controller
     {
         $cart = Cart::with(['items.product'])->where('user_id', auth()->id())->first();
 
-        // Fix cart items without prices
+        // Fix cart items without prices and remove items with unavailable products
         if ($cart) {
             CartItem::where('cart_id', $cart->id)
                 ->where(function ($query) {
@@ -127,6 +135,13 @@ class CartController extends Controller
                     $item->price = $item->product->price;
                     $item->save();
                 });
+
+            // Remove items where the product is no longer available
+            CartItem::where('cart_id', $cart->id)
+                ->whereHas('product', function ($query) {
+                    $query->where('is_available', false);
+                })
+                ->delete();
         }
 
         if (!$cart || $cart->items->count() === 0) {
@@ -237,7 +252,24 @@ class CartController extends Controller
                     'payment_status' => 'pending'
                 ]);
 
-                // Clear cart
+                // Mark products as unavailable for bank transfer orders
+                $productIds = [];
+                foreach ($order->items as $item) {
+                    $productIds[] = $item->product_id;
+                }
+
+                Log::info('Marking products as unavailable for bank transfer: ' . implode(', ', $productIds));
+                \DB::table('products')
+                    ->whereIn('id', $productIds)
+                    ->update(['is_available' => false]);
+
+                // Verify the update
+                $updatedProducts = \DB::table('products')
+                    ->whereIn('id', $productIds)
+                    ->pluck('is_available', 'id');
+                Log::info('Updated products status for bank transfer: ' . $updatedProducts->toJson());
+
+                // Clear cart after marking products as unavailable
                 $cart->items()->delete();
                 $cart->delete();
 
@@ -246,6 +278,7 @@ class CartController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Checkout Error: ' . $e->getMessage());
+            Log::error('Checkout Error Stack: ' . $e->getTraceAsString());
             return redirect()->back()->with('error', 'Checkout failed. Please try again.');
         }
     }
@@ -269,9 +302,17 @@ class CartController extends Controller
 
     public function toyyibPayCallback(Request $request)
     {
+        // Log every callback regardless of status
+        Log::info('ToyyibPay Callback Received: ' . json_encode($request->all()));
+        Log::info('Request method: ' . $request->method());
+        Log::info('Request headers: ' . json_encode($request->headers->all()));
+
         try {
             $billCode = $request->input('billcode');
-            $status = $request->input('status_code');
+            $paymentStatus = $request->input('billpaymentStatus');
+
+            Log::info('Bill Code: ' . $billCode);
+            Log::info('Payment Status: ' . $paymentStatus);
 
             if (!$billCode) {
                 Log::error('ToyyibPay Callback: Missing bill code');
@@ -286,17 +327,49 @@ class CartController extends Controller
                 return redirect()->route('shop.index')->with('error', 'Order not found');
             }
 
-            // Verify payment with ToyyibPay
-            $toyyibPay = new ToyyibPayService();
-            $verification = $toyyibPay->verifyPayment($billCode, $status);
+            // ToyyibPay webhooks already contain the payment status
+            // Status 1, 2, or 3 means paid (according ToyyibPay documentation)
+            $isPaid = $paymentStatus == '1' || $paymentStatus == '2' || $paymentStatus == '3';
 
-            if ($verification['success'] && $verification['status'] === 'paid') {
+            if ($isPaid) {
                 // Update order status
                 $order->update([
-                    'status' => 'completed',
-                    'payment_status' => 'paid',
-                    'transaction_id' => $verification['transaction_id'] ?? null
+                    'status' => 'delivered',
+                    'payment_status' => 'paid'
                 ]);
+
+                // Mark products as unavailable when payment is confirmed
+                $productIds = [];
+                foreach ($order->items as $item) {
+                    $productIds[] = $item->product_id;
+                }
+
+                Log::info('Marking products as unavailable: ' . implode(', ', $productIds));
+
+                // Check current status first
+                $beforeUpdate = \DB::table('products')
+                    ->whereIn('id', $productIds)
+                    ->pluck('is_available', 'id');
+                Log::info('Products status before update: ' . $beforeUpdate->toJson());
+
+                // Perform the update
+                $updateResult = \DB::table('products')
+                    ->whereIn('id', $productIds)
+                    ->update(['is_available' => false]);
+                Log::info('Update result (rows affected): ' . $updateResult);
+
+                // Verify the update
+                $updatedProducts = \DB::table('products')
+                    ->whereIn('id', $productIds)
+                    ->pluck('is_available', 'id');
+                Log::info('Products status after update: ' . $updatedProducts->toJson());
+
+                // Double-check with a fresh query to ensure persistence
+                $doubleCheck = \DB::table('products')
+                    ->whereIn('id', $productIds)
+                    ->select('id', 'is_available')
+                    ->get();
+                Log::info('Final double-check: ' . $doubleCheck->toJson());
 
                 Log::info('Payment successful for order ' . $order->id);
 
@@ -305,12 +378,11 @@ class CartController extends Controller
             } else {
                 // Payment failed or was cancelled
                 $order->update([
-                    'status' => 'failed',
-                    'payment_status' => 'failed',
-                    'transaction_id' => $verification['transaction_id'] ?? null
+                    'status' => 'cancelled',
+                    'payment_status' => 'pending'
                 ]);
 
-                Log::warning('Payment failed for order ' . $order->id . ': ' . ($verification['message'] ?? 'Unknown error'));
+                Log::warning('Payment failed for order ' . $order->id . ': Payment status ' . $paymentStatus);
 
                 return redirect()->route('checkout')
                     ->with('error', 'Payment failed or was cancelled. Please try again.');

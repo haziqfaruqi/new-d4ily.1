@@ -40,11 +40,20 @@ Route::middleware(['customer'])->group(function () {
         Route::get('/order/confirmation/{orderId}', [\App\Http\Controllers\Web\CartController::class, 'orderConfirmation'])->name('order.confirmation');
         Route::get('/order/history', [\App\Http\Controllers\Web\CartController::class, 'orderHistory'])->name('order.history');
     });
-
-    // ToyyibPay Routes
-    Route::post('/toyyibpay/callback', [\App\Http\Controllers\Web\CartController::class, 'toyyibPayCallback'])->name('toyyibpay.callback');
-    Route::get('/cancel-checkout', [\App\Http\Controllers\Web\CartController::class, 'cancelCheckout'])->name('cancel.checkout');
 });
+
+// ToyyibPay Routes (no authentication required)
+Route::post('/toyyibpay/callback', [\App\Http\Controllers\Web\CartController::class, 'toyyibPayCallback'])->name('toyyibpay.callback');
+Route::get('/cancel-checkout', [\App\Http\Controllers\Web\CartController::class, 'cancelCheckout'])->name('cancel.checkout');
+
+// Test route for callback
+Route::get('/test-callback', function () {
+    return 'Callback route is accessible. This is a test endpoint.';
+})->name('test.callback');
+
+// Webhook testing routes
+Route::get('/webhook/test', [\App\Http\Controllers\Web\WebhookTestController::class, 'testForm'])->name('webhook.test');
+Route::post('/webhook/test', [\App\Http\Controllers\Web\WebhookTestController::class, 'testToyyibPay'])->name('webhook.test.submit');
 
 // Admin Routes (Admin only)
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
