@@ -29,14 +29,9 @@ def similar_items(request: RecommendationRequest):
 def for_user(request: RecommendationRequest):
     if not request.user_id:
         raise HTTPException(status_code=400, detail="User ID is required for user recommendations")
-    
+
     try:
-        product_ids = recommender.get_collaborative_recommendations(request.user_id, request.limit)
-        # Fallback to popular items or empty list if no collaborative recs found
-        if not product_ids:
-             # Logic for fallback could go here, for now return empty
-             return {"product_ids": [], "message": "Not enough data for collaborative filtering"}
-             
+        product_ids = recommender.get_user_content_recommendations(request.user_id, request.limit)
         return {"product_ids": product_ids}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

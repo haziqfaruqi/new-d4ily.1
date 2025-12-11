@@ -34,41 +34,67 @@ def get_content_based_recommendations(product_id, top_n=5):
     
     return df['id'].iloc[product_indices].tolist()
 
-def get_collaborative_recommendations(user_id, top_n=5):
+def get_user_content_recommendations(user_id, top_n=5):
+    """
+    Get recommendations for a user based on content filtering using their viewed products
+    """
     conn = get_db_connection()
-    # Fetch interactions (views, clicks, purchases)
-    query = "SELECT user_id, product_id, type FROM interactions WHERE user_id IS NOT NULL"
-    df = pd.read_sql(query, conn)
+
+    # Get products the user has viewed
+    query = """
+        SELECT product_id FROM interactions
+        WHERE user_id = ? AND type = 'view'
+        ORDER BY created_at DESC
+        LIMIT 5
+    """
+    cursor = conn.cursor()
+    cursor.execute(query, (user_id,))
+    viewed_products = [row[0] for row in cursor.fetchall()]
+
+    if not viewed_products:
+        # Fallback to popular products if user hasn't viewed anything
+        query = """
+            SELECT p.id
+            FROM products p
+            LEFT JOIN interactions i ON p.id = i.product_id
+            GROUP BY p.id
+            ORDER BY COUNT(i.id) DESC
+            LIMIT ?
+        """
+        cursor.execute(query, (top_n,))
+        product_ids = [row[0] for row in cursor.fetchall()]
+    else:
+        recommendations = set()
+
+        # Get similar products for each viewed product
+        for product_id in viewed_products:
+            similar = get_content_based_recommendations(product_id, min(3, top_n))
+            recommendations.update(similar)
+
+        # Remove products user has already viewed
+        query = "SELECT product_id FROM interactions WHERE user_id = ?"
+        cursor.execute(query, (user_id,))
+        viewed_ids = set(row[0] for row in cursor.fetchall())
+
+        recommendations = list(recommendations - viewed_ids)
+
+        if len(recommendations) < top_n:
+            # Get additional popular products to fill the gap
+            query = """
+                SELECT p.id
+                FROM products p
+                LEFT JOIN interactions i ON p.id = i.product_id
+                WHERE p.id NOT IN ({})
+                GROUP BY p.id
+                ORDER BY COUNT(i.id) DESC
+                LIMIT ?
+            """.format(','.join(['?' for _ in viewed_products] + [top_n - len(recommendations)]))
+
+            cursor.execute(query, viewed_products + [top_n - len(recommendations)])
+            additional = [row[0] for row in cursor.fetchall()]
+            recommendations.extend(additional)
+
+        product_ids = recommendations[:top_n]
+
     conn.close()
-
-    if df.empty:
-        return []
-
-    # Assign weights to interaction types
-    weights = {'view': 1, 'click': 2, 'cart': 3, 'purchase': 5}
-    df['weight'] = df['type'].map(weights)
-
-    # Create User-Item Matrix
-    user_item_matrix = df.pivot_table(index='user_id', columns='product_id', values='weight', aggfunc='sum').fillna(0)
-
-    if user_id not in user_item_matrix.index:
-        return []
-
-    # Simple User-Based Collaborative Filtering (using Cosine Similarity)
-    user_sim = cosine_similarity(user_item_matrix)
-    user_sim_df = pd.DataFrame(user_sim, index=user_item_matrix.index, columns=user_item_matrix.index)
-
-    similar_users = user_sim_df[user_id].sort_values(ascending=False)[1:6] # Top 5 similar users
-    
-    recommended_products = {}
-    
-    for similar_user in similar_users.index:
-        user_products = user_item_matrix.loc[similar_user]
-        for product_id, weight in user_products.items():
-            if weight > 0 and user_item_matrix.loc[user_id, product_id] == 0: # Not interacted yet
-                if product_id not in recommended_products:
-                    recommended_products[product_id] = 0
-                recommended_products[product_id] += weight * similar_users[similar_user]
-    
-    sorted_recs = sorted(recommended_products.items(), key=lambda x: x[1], reverse=True)
-    return [x[0] for x in sorted_recs[:top_n]]
+    return product_ids

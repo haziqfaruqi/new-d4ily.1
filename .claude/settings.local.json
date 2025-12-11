@@ -17,7 +17,8 @@
       "Bash(wmic:*)",
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
