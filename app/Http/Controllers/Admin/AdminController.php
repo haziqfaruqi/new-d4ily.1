@@ -56,7 +56,6 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
             'condition' => 'required|in:new,like new,good,fair,poor',
             'size' => 'required|string',
             'brand' => 'required|string',
@@ -75,7 +74,7 @@ class AdminController extends Controller
             $validated['images'] = [];
         }
 
-        $validated['featured'] = $request->has('featured');
+                $validated['stock'] = 1; // All products have stock of 1
 
         Product::create($validated);
 
@@ -91,7 +90,6 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
             'condition' => 'required|in:new,like new,good,fair,poor',
             'size' => 'required|string',
             'brand' => 'required|string',
@@ -115,7 +113,7 @@ class AdminController extends Controller
             $validated['images'] = $product->images;
         }
 
-        $validated['featured'] = $request->has('featured');
+                $validated['stock'] = 1; // All products have stock of 1
 
         $product->update($validated);
 

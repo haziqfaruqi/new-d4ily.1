@@ -18,12 +18,10 @@ class Product extends Model
         'brand',
         'color',
         'images',
-        'featured',
     ];
 
     protected $casts = [
         'images' => 'array',
-        'featured' => 'boolean',
         'price' => 'decimal:2',
     ];
 

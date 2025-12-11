@@ -82,7 +82,7 @@
 </section>
 
 <!-- Stats Section -->
-<section class="py-16" style="background-color: #FAECC3; border-bottom: 1px solid #e5e7eb;">
+<section class="py-16 bg-white" style="border-bottom: 1px solid #e5e7eb;">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>

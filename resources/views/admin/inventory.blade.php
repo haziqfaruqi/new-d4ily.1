@@ -69,7 +69,18 @@
                                     </td>
                                     <td class="px-5 py-3 text-zinc-700 capitalize">{{ $product->condition }}</td>
                                     <td class="px-5 py-3 text-right">
-                                        <button onclick='editProduct(@json($product))' class="text-zinc-600 hover:text-zinc-900 mr-2">
+                                        <button onclick='editProduct({
+                    id: {{ $product->id }},
+                    name: "{{ $product->name }}",
+                    brand: "{{ $product->brand }}",
+                    description: "{{ $product->description }}",
+                    category_id: {{ $product->category_id }},
+                    price: {{ $product->price }},
+                    condition: "{{ $product->condition }}",
+                    size: "{{ $product->size }}",
+                    color: "{{ $product->color }}",
+                    images: {{ json_encode($product->images) }}
+                })' class="text-zinc-600 hover:text-zinc-900 mr-2">
                                             <i data-lucide="edit" class="w-4 h-4"></i>
                                         </button>
                                         <form action="{{ route('admin.inventory.delete', $product->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this product?')">
@@ -103,10 +114,10 @@
             <div class="p-6 border-b border-zinc-200">
                 <h2 id="modalTitle" class="text-lg font-semibold text-zinc-900">Add Product</h2>
             </div>
-            <form id="productForm" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
+            <form id="productForm" method="POST" enctype="multipart/form-data" onsubmit="return validateFormAndSubmit()" class="p-6 space-y-4">
                 @csrf
                 <input type="hidden" id="productId" name="_method" value="">
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-zinc-700 mb-2">Product Name</label>
@@ -123,7 +134,7 @@
                     <textarea name="description" rows="3" required class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900"></textarea>
                 </div>
 
-                <div class="grid grid-cols-3 gap-4">
+                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-zinc-700 mb-2">Category</label>
                         <select name="category_id" required class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
@@ -135,10 +146,6 @@
                     <div>
                         <label class="block text-sm font-medium text-zinc-700 mb-2">Price</label>
                         <input type="number" name="price" step="0.01" required class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-zinc-700 mb-2">Stock</label>
-                        <input type="number" name="stock" required class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
                     </div>
                 </div>
 
@@ -153,7 +160,15 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-zinc-700 mb-2">Size</label>
-                        <input type="text" name="size" required class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                        <select name="size" required class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900" id="sizeSelect">
+                            <option value="XS">XS</option>
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="XXL">XXL</option>
+                            <option value="XXXL">XXXL</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-zinc-700 mb-2">Color</label>
@@ -174,11 +189,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" name="featured" id="featured" class="rounded border-zinc-300">
-                    <label for="featured" class="text-sm text-zinc-700">Featured Product</label>
-                </div>
-
+                
                 <div class="flex gap-3 pt-4">
                     <button type="submit" class="flex-1 px-4 py-2 text-sm bg-zinc-900 text-white rounded-md hover:bg-zinc-800">Save Product</button>
                     <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm border border-zinc-300 rounded-md hover:bg-zinc-50">Cancel</button>
@@ -211,29 +222,80 @@
         }
 
         function editProduct(product) {
+            console.log('=== EDITING PRODUCT ===');
+            console.log('Product ID:', product.id);
+            console.log('Product Name:', product.name);
+            console.log('Product Size:', product.size);
+            console.log('Product Data:', product);
+
             document.getElementById('modalTitle').textContent = 'Edit Product';
             document.getElementById('productForm').action = `/admin/inventory/${product.id}`;
+            document.getElementById('productId').name = '_method';
             document.getElementById('productId').value = 'PUT';
-            
+
             const form = document.getElementById('productForm');
             form.querySelector('[name="name"]').value = product.name;
             form.querySelector('[name="brand"]').value = product.brand;
             form.querySelector('[name="description"]').value = product.description;
             form.querySelector('[name="category_id"]').value = product.category_id;
             form.querySelector('[name="price"]').value = product.price;
-            form.querySelector('[name="stock"]').value = product.stock;
             form.querySelector('[name="condition"]').value = product.condition;
-            form.querySelector('[name="size"]').value = product.size;
+
+            // Set size dropdown value
+            console.log('Setting size to:', product.size);
+            const sizeSelect = document.getElementById('sizeSelect');
+            console.log('Size select element:', sizeSelect);
+            if (sizeSelect) {
+                sizeSelect.value = product.size;
+                console.log('Size select value set to:', sizeSelect.value);
+                console.log('Available options:', Array.from(sizeSelect.options).map(opt => opt.value));
+            } else {
+                console.error('Size select element not found!');
+            }
+
             form.querySelector('[name="color"]').value = product.color;
-            form.querySelector('[name="featured"]').checked = product.featured;
             
             // Show existing image
             if (product.images && product.images[0]) {
                 document.getElementById('previewImg').src = product.images[0];
                 document.getElementById('imagePreview').classList.remove('hidden');
             }
-            
+
             document.getElementById('productModal').classList.remove('hidden');
+            console.log('Modal opened with form data');
+        }
+
+        function validateForm() {
+            const form = document.getElementById('productForm');
+            const name = form.querySelector('[name="name"]').value;
+            const brand = form.querySelector('[name="brand"]').value;
+            const category = form.querySelector('[name="category_id"]').value;
+            const price = form.querySelector('[name="price"]').value;
+            const condition = form.querySelector('[name="condition"]').value;
+            const size = form.querySelector('[name="size"]').value;
+            const color = form.querySelector('[name="color"]').value;
+
+            console.log('Form validation:', { name, brand, category, price, condition, size, color });
+
+            if (!name || !brand || !category || !price || !condition || !size || !color) {
+                alert('Please fill in all required fields.\nName: ' + (name ? 'OK' : 'Missing') +
+                       '\nBrand: ' + (brand ? 'OK' : 'Missing') +
+                       '\nCategory: ' + (category ? 'OK' : 'Missing') +
+                       '\nPrice: ' + (price ? 'OK' : 'Missing') +
+                       '\nCondition: ' + (condition ? 'OK' : 'Missing') +
+                       '\nSize: ' + (size ? 'OK' : 'Missing') +
+                       '\nColor: ' + (color ? 'OK' : 'Missing'));
+                return false;
+            }
+
+            return true;
+        }
+
+    function validateFormAndSubmit() {
+            if (validateForm()) {
+                return confirm('Save product changes?');
+            }
+            return false;
         }
 
         function closeModal() {
