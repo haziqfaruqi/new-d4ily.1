@@ -1,7 +1,9 @@
 <nav class="sticky top-0 z-50 border-b backdrop-blur-md border-zinc-200 bg-white/90">
     <div class="mx-auto max-w-[1600px] px-8 h-16 flex items-center justify-between">
         <div class="flex items-center gap-8">
-            <a href="{{ route('shop.index') }}" class="text-2xl font-bold tracking-tighter text-zinc-900">d4ily.1</a>
+            <a href="{{ route('shop.index') }}" class="flex items-center gap-2">
+                <img src="{{ asset('logo/logo.png') }}" alt="d4ily.1" class="h-12 w-auto">
+            </a>
             <div class="hidden md:flex items-center gap-6 text-base font-medium text-zinc-600">
                 <a href="{{ route('landing') }}" class="transition-colors hover:text-zinc-900">Home</a>
                 <a href="{{ route('shop.index') }}" class="transition-colors hover:text-zinc-900">Shop</a>

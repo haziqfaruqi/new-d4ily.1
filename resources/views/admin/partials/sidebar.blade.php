@@ -1,8 +1,6 @@
 <aside class="w-64 bg-white border-r border-zinc-200 flex flex-col">
     <div class="h-16 flex items-center px-6 border-b border-zinc-100">
-        <div class="h-6 w-6 rounded-md bg-zinc-900 flex items-center justify-center mr-3">
-            <span class="text-xs font-bold text-white">d1</span>
-        </div>
+        <img src="{{ asset('logo/logo.png') }}" alt="d4ily.1" class="h-8 w-auto mr-3">
         <span class="text-base font-semibold">Admin Console</span>
     </div>
 
