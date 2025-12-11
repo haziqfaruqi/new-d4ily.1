@@ -34,29 +34,54 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
             <!-- Left: Gallery -->
-            <div class="lg:col-span-7 flex flex-col gap-4">
-                <div
-                    class="relative aspect-[2/1] w-full overflow-hidden rounded-lg border group border-zinc-200 bg-zinc-100">
-                    <img id="main-image" src="{{ $product->images[0] ?? 'https://via.placeholder.com/600' }}"
-                        alt="{{ $product->name }}"
-                        class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
-                    @if($product->stock == 1)
-                        <div
-                            class="absolute bottom-4 left-4 inline-flex items-center rounded-full backdrop-blur px-3 py-1 text-xs font-medium shadow-sm border bg-white/90 text-zinc-800 border-zinc-200">
-                            Only 1 available
-                        </div>
-                    @endif
-                </div>
-                @if(isset($product->images) && is_array($product->images) && count($product->images) > 1)
-                    <div class="grid grid-cols-3 gap-3">
-                        @foreach(array_slice($product->images, 0, 3) as $image)
-                            <button onclick="document.getElementById('main-image').src='{{ $image }}'"
-                                class="aspect-[1/1] overflow-hidden rounded-md border border-zinc-200 hover:border-zinc-400 transition-colors">
-                                <img src="{{ $image }}" class="h-full w-full object-cover">
-                            </button>
-                        @endforeach
+            <div class="lg:col-span-7 flex flex-col justify-center h-full">
+                <!-- Main Image -->
+                <div class="max-w-lg mx-auto w-full">
+                    <div class="relative aspect-square w-full overflow-hidden rounded-lg border group border-zinc-200 bg-zinc-100">
+                        <img id="main-image" src="{{ $product->images[0] ?? 'https://via.placeholder.com/600' }}"
+                            alt="{{ $product->name }}"
+                            class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
+                        @if($product->stock == 1)
+                            <div
+                                class="absolute bottom-4 left-4 inline-flex items-center rounded-full backdrop-blur px-3 py-1 text-xs font-medium shadow-sm border bg-white/90 text-zinc-800 border-zinc-200">
+                                Only 1 available
+                            </div>
+                        @endif
                     </div>
-                @endif
+
+                    <!-- Thumbnails -->
+                    <div class="grid grid-cols-4 gap-4 mt-4">
+                        @if(isset($product->images) && is_array($product->images) && count($product->images) > 0)
+                            @foreach($product->images as $index => $image)
+                                <button
+                                    onclick="document.getElementById('main-image').src='{{ $image }}'"
+                                    class="relative aspect-square overflow-hidden rounded-md border transition-all duration-200 {{ $index === 0 ? 'ring-2 ring-black' : 'border-zinc-200 hover:border-zinc-400' }} {{ $index === 0 ? 'cursor-default' : 'cursor-pointer' }}">
+                                    <img src="{{ $image }}" class="h-full w-full object-cover">
+                                </button>
+                            @endforeach
+
+                            <!-- Duplicate to fill 4 thumbnails if needed -->
+                            @if(count($product->images) < 4)
+                                @for ($i = count($product->images); $i < 4; $i++)
+                                    <button disabled
+                                        class="relative aspect-square overflow-hidden rounded-md border border-zinc-200 opacity-50 cursor-not-allowed">
+                                        <img src="{{ $product->images[0] ?? 'https://via.placeholder.com/200' }}"
+                                            class="h-full w-full object-cover opacity-50">
+                                    </button>
+                                @endfor
+                            @endif
+                        @else
+                            <!-- No images - show 4 placeholders -->
+                            @for ($i = 0; $i < 4; $i++)
+                                <button disabled
+                                    class="relative aspect-square overflow-hidden rounded-md border border-zinc-200 opacity-50 cursor-not-allowed">
+                                    <img src="https://via.placeholder.com/200"
+                                        class="h-full w-full object-cover opacity-50">
+                                </button>
+                            @endfor
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <!-- Right: Details -->
@@ -251,6 +276,12 @@
                 } else {
                     if (response.status === 401) {
                         window.location.href = '{{ route("login") }}';
+                    } else if (response.status === 409) {
+                        const data = await response.json();
+                        alert(data.error || 'This item is already in your cart');
+                        btn.innerHTML = '<i data-lucide="shopping-cart" class="w-4 h-4"></i> In Cart';
+                        btn.disabled = true;
+                        lucide.createIcons();
                     } else {
                         const data = await response.json();
                         alert(data.error || 'Failed to add to cart');

@@ -33,7 +33,10 @@ class CartController extends Controller
         $cartItem = $cart->items()->where('product_id', $request->product_id)->first();
 
         if ($cartItem) {
-            $cartItem->increment('quantity', $request->input('quantity', 1));
+            // For thrift items, prevent adding same item multiple times
+            return response()->json([
+                'error' => 'This item is already in your cart. Thrift items can only be purchased once per listing.'
+            ], 409); // 409 Conflict status code
         } else {
             $cartItem = $cart->items()->create([
                 'product_id' => $request->product_id,
