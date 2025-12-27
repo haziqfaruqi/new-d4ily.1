@@ -251,6 +251,98 @@
     </div>
 </section>
 
+<!-- FAQ Section -->
+<section class="py-16 bg-white">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl sm:text-4xl font-bold text-zinc-900 mb-4">Frequently Asked Questions</h2>
+            <p class="text-lg text-zinc-600">
+                Everything you need to know about shopping with D4ily
+            </p>
+        </div>
+
+        <div class="space-y-4" id="faq-container">
+            <!-- FAQ Item 1 -->
+            <div class="faq-item border border-zinc-200 rounded-lg overflow-hidden">
+                <button class="faq-button w-full px-6 py-4 flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 transition-colors text-left">
+                    <span class="font-semibold text-zinc-900">What is D4ily and how does it work?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-zinc-500 transition-transform duration-300"></i>
+                </button>
+                <div class="faq-content hidden px-6 py-4 bg-white">
+                    <p class="text-zinc-600">
+                        D4ily is a vintage thrift shop dedicated to sustainable fashion. We curate and sell pre-loved clothing, bags, accessories, and jewelry. Each item is carefully inspected for quality and authenticity, giving vintage pieces a new life while reducing fashion waste.
+                    </p>
+                </div>
+            </div>
+
+            <!-- FAQ Item 2 -->
+            <div class="faq-item border border-zinc-200 rounded-lg overflow-hidden">
+                <button class="faq-button w-full px-6 py-4 flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 transition-colors text-left">
+                    <span class="font-semibold text-zinc-900">How do you determine the condition of items?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-zinc-500 transition-transform duration-300"></i>
+                </button>
+                <div class="faq-content hidden px-6 py-4 bg-white">
+                    <p class="text-zinc-600">
+                        Each item is thoroughly inspected and rated on condition: Excellent (like new), Great (minimal signs of wear), Good (normal wear consistent with age), or Fair (notable wear but still wearable). We always provide detailed photos and accurate descriptions so you know exactly what you're getting.
+                    </p>
+                </div>
+            </div>
+
+            <!-- FAQ Item 3 -->
+            <div class="faq-item border border-zinc-200 rounded-lg overflow-hidden">
+                <button class="faq-button w-full px-6 py-4 flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 transition-colors text-left">
+                    <span class="font-semibold text-zinc-900">What payment methods do you accept?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-zinc-500 transition-transform duration-300"></i>
+                </button>
+                <div class="faq-content hidden px-6 py-4 bg-white">
+                    <p class="text-zinc-600">
+                        We accept all major credit and debit cards, online banking transfers, and e-wallets including GrabPay and Touch 'n Go. All payments are securely processed through our trusted payment gateway.
+                    </p>
+                </div>
+            </div>
+
+            <!-- FAQ Item 4 -->
+            <div class="faq-item border border-zinc-200 rounded-lg overflow-hidden">
+                <button class="faq-button w-full px-6 py-4 flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 transition-colors text-left">
+                    <span class="font-semibold text-zinc-900">Can I return or exchange items?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-zinc-500 transition-transform duration-300"></i>
+                </button>
+                <div class="faq-content hidden px-6 py-4 bg-white">
+                    <p class="text-zinc-600">
+                        Due to the unique nature of vintage items, all sales are final. However, if an item arrives significantly different from its description or is damaged, please contact us within 48 hours of delivery and we'll work to make it right.
+                    </p>
+                </div>
+            </div>
+
+            <!-- FAQ Item 5 -->
+            <div class="faq-item border border-zinc-200 rounded-lg overflow-hidden">
+                <button class="faq-button w-full px-6 py-4 flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 transition-colors text-left">
+                    <span class="font-semibold text-zinc-900">How do you ship orders?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-zinc-500 transition-transform duration-300"></i>
+                </button>
+                <div class="faq-content hidden px-6 py-4 bg-white">
+                    <p class="text-zinc-600">
+                        We ship nationwide using reliable courier services. Orders are typically processed within 1-2 business days, with delivery taking 2-5 business days depending on your location. You'll receive a tracking number once your order ships.
+                    </p>
+                </div>
+            </div>
+
+            <!-- FAQ Item 6 -->
+            <div class="faq-item border border-zinc-200 rounded-lg overflow-hidden">
+                <button class="faq-button w-full px-6 py-4 flex items-center justify-between bg-zinc-50 hover:bg-zinc-100 transition-colors text-left">
+                    <span class="font-semibold text-zinc-900">How is shopping vintage sustainable?</span>
+                    <i data-lucide="chevron-down" class="w-5 h-5 text-zinc-500 transition-transform duration-300"></i>
+                </button>
+                <div class="faq-content hidden px-6 py-4 bg-white">
+                    <p class="text-zinc-600">
+                        Shopping vintage extends the lifecycle of clothing, reducing the demand for new production and keeping items out of landfills. The fashion industry is one of the world's largest polluters, and by choosing pre-loved pieces, you're helping reduce water waste, carbon emissions, and textile waste.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- CTA Section -->
 <section
   class="relative py-16 text-stone-800"
@@ -321,7 +413,7 @@
                     <li><a href="#" class="hover:text-white">About Us</a></li>
                     <li><a href="#" class="hover:text-white">Sustainability</a></li>
                     <li><a href="#" class="hover:text-white">Size Guide</a></li>
-                    <li><a href="#" class="hover:text-white">FAQs</a></li>
+                    <li><a href="#faq-container" class="hover:text-white">FAQs</a></li>
                 </ul>
             </div>
             <div>
@@ -353,6 +445,18 @@
 
 <script>
     lucide.createIcons();
+
+    // FAQ Accordion functionality
+    document.querySelectorAll('.faq-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const content = button.nextElementSibling;
+            const icon = button.querySelector('[data-lucide="chevron-down"]');
+
+            // Toggle current item
+            content.classList.toggle('hidden');
+            icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        });
+    });
 
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
