@@ -283,12 +283,54 @@ class CartController extends Controller
         }
     }
 
-    public function orderConfirmation($orderId)
+    public function orderConfirmation($orderId, Request $request)
     {
         $order = \App\Models\Order::with('items.product')->where('id', $orderId)->where('user_id', auth()->id())->first();
 
         if (!$order) {
             return redirect()->route('shop.index')->with('error', 'Order not found');
+        }
+
+        // Process ToyyibPay return URL parameters (when user returns after payment)
+        $statusId = $request->query('status_id');
+        $billCode = $request->query('billcode');
+        $transactionId = $request->query('transaction_id');
+
+        Log::info('orderConfirmation called', [
+            'order_id' => $orderId,
+            'status_id' => $statusId,
+            'billcode' => $billCode,
+            'transaction_id' => $transactionId
+        ]);
+
+        // If payment status is provided and payment is successful (status_id = 1 means successful)
+        if ($statusId && $statusId == '1' && $order->payment_status !== 'paid') {
+            Log::info('Payment successful via return URL, marking products as unavailable for order ' . $order->id);
+
+            // Update order status
+            $order->update([
+                'status' => 'delivered',
+                'payment_status' => 'paid'
+            ]);
+
+            if ($transactionId) {
+                $order->update(['transaction_id' => $transactionId]);
+            }
+
+            // Mark products as unavailable
+            $productIds = [];
+            foreach ($order->items as $item) {
+                $productIds[] = $item->product_id;
+            }
+
+            \DB::table('products')
+                ->whereIn('id', $productIds)
+                ->update(['is_available' => false]);
+
+            Log::info('Products marked as unavailable: ' . implode(', ', $productIds));
+
+            // Reload order with updated products
+            $order = \App\Models\Order::with('items.product')->where('id', $orderId)->where('user_id', auth()->id())->first();
         }
 
         return view('shop.order-confirmation', compact('order'));
