@@ -8,6 +8,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Models\Wishlist;
 use App\Models\Order;
+use App\Models\Interaction;
 use App\Services\ToyyibPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -43,6 +44,9 @@ class CartController extends Controller
                 'quantity' => $request->input('quantity', 1),
                 'price' => $product->price,
             ]);
+
+            // Track cart interaction for recommendations
+            Interaction::logCart(auth()->id(), $productId);
         }
 
         return response()->json([
@@ -85,12 +89,16 @@ class CartController extends Controller
 
         if ($wishlist) {
             $wishlist->delete();
+            // Track wishlist removal interaction
+            Interaction::logWishlist(auth()->id(), $productId, false);
             return response()->json(['success' => true, 'wishlisted' => false, 'message' => 'Removed from wishlist']);
         } else {
             Wishlist::create([
                 'user_id' => auth()->id(),
                 'product_id' => $productId,
             ]);
+            // Track wishlist add interaction
+            Interaction::logWishlist(auth()->id(), $productId, true);
             return response()->json(['success' => true, 'wishlisted' => true, 'message' => 'Added to wishlist']);
         }
     }
@@ -286,6 +294,9 @@ class CartController extends Controller
                     ->pluck('is_available', 'id');
                 Log::info('Updated products status for bank transfer: ' . $updatedProducts->toJson());
 
+                // Track purchase interactions for recommendations
+                Interaction::logPurchase($order->id);
+
                 // Clear cart after marking products as unavailable
                 $cart->items()->delete();
                 $cart->delete();
@@ -345,6 +356,9 @@ class CartController extends Controller
                 ->update(['is_available' => false]);
 
             Log::info('Products marked as unavailable: ' . implode(', ', $productIds));
+
+            // Track purchase interactions for recommendations
+            Interaction::logPurchase($order->id);
 
             // Reload order with updated products
             $order = \App\Models\Order::with('items.product')->where('id', $orderId)->where('user_id', auth()->id())->first();

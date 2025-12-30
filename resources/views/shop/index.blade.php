@@ -81,10 +81,11 @@
                         </p>
                     </div>
                     <select onchange="window.location.href=this.value" class="px-4 py-2 text-sm border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300">
-                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'newest'])) }}" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>Newest</option>
-                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'price_low'])) }}" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Price: Low to High</option>
-                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'price_high'])) }}" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Price: High to Low</option>
-                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'popular'])) }}" {{ request('sort') == 'popular' ? 'selected' : '' }}>Most Popular</option>
+                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'recommended'])) }}" {{ request('sort', 'recommended') === 'recommended' ? 'selected' : '' }}>Recommended</option>
+                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'newest'])) }}" {{ request('sort') === 'newest' ? 'selected' : '' }}>Newest</option>
+                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'price_low'])) }}" {{ request('sort') === 'price_low' ? 'selected' : '' }}>Price: Low to High</option>
+                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'price_high'])) }}" {{ request('sort') === 'price_high' ? 'selected' : '' }}>Price: High to Low</option>
+                        <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'popular'])) }}" {{ request('sort') === 'popular' ? 'selected' : '' }}>Most Popular</option>
                     </select>
                 </div>
 

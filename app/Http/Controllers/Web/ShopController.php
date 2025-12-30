@@ -61,7 +61,7 @@ class ShopController extends Controller
         }
 
         // Sort
-        $sort = $request->get('sort', 'newest');
+        $sort = $request->get('sort', 'recommended');
         switch ($sort) {
             case 'price_low':
                 $query->orderBy('price', 'asc');
@@ -72,7 +72,11 @@ class ShopController extends Controller
             case 'popular':
                 $query->withCount('interactions')->orderBy('interactions_count', 'desc');
                 break;
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
             case 'recommended':
+            default:
                 // Personalized sort - boost products based on user history
                 if (!empty($personalizedProductIds)) {
                     // Order by personalized relevance first, then by created_at
@@ -82,14 +86,6 @@ class ShopController extends Controller
                     $query->orderBy('created_at', 'desc');
                 }
                 break;
-            default:
-                // For default view with logged-in users, boost personalized products
-                if (!empty($personalizedProductIds)) {
-                    $query->orderByRaw("FIELD(id, " . implode(',', $personalizedProductIds) . ") DESC")
-                          ->orderBy('created_at', 'desc');
-                } else {
-                    $query->orderBy('created_at', 'desc');
-                }
         }
 
         $products = $query->paginate(10);
@@ -253,57 +249,126 @@ class ShopController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            // Fall back to content-based filtering
+            // Fall back to enhanced content-based filtering
         }
 
-        // Fallback: Content-based filtering using user's interaction history
-        // Get products user has viewed or searched for
-        $viewedProductIds = Interaction::where('user_id', $userId)
+        // Enhanced Fallback: Content-based filtering with weighted scoring
+        return $this->getProductsByAttributeMatching($userId, $limit);
+    }
+
+    /**
+     * Get products based on attribute matching (color, size, brand, category)
+     * Uses weighted scoring from interaction history
+     */
+    protected function getProductsByAttributeMatching($userId, $limit = 8)
+    {
+        // Get user's interaction history with weights
+        $interactions = Interaction::where('user_id', $userId)
+            ->withWeights()
+            ->with('product')
             ->whereNotNull('product_id')
             ->orderBy('created_at', 'desc')
-            ->pluck('product_id')
-            ->unique()
-            ->take(10)
-            ->toArray();
+            ->take(50)
+            ->get();
 
-        // Get products from same categories as viewed products
-        $categoriesFromViews = [];
-        if (!empty($viewedProductIds)) {
-            $categoriesFromViews = Product::whereIn('id', $viewedProductIds)
-                ->pluck('category_id')
-                ->unique()
-                ->toArray();
+        if ($interactions->isEmpty()) {
+            // No history, return latest products
+            return Product::with('category')
+                ->available()
+                ->where('stock', '>', 0)
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
         }
 
-        // Get last search query
-        $lastSearch = Interaction::where('user_id', $userId)
-            ->where('type', 'search')
-            ->whereNotNull('search_query')
-            ->orderBy('created_at', 'desc')
-            ->value('search_query');
+        // Extract preference weights from interactions
+        $categoryScores = [];
+        $brandScores = [];
+        $colorScores = [];
+        $sizeScores = [];
+        $conditionScores = [];
 
-        $query = Product::with('category')
+        $viewedProductIds = [];
+
+        foreach ($interactions as $interaction) {
+            $product = $interaction->product;
+            if (!$product) continue;
+
+            $viewedProductIds[] = $product->id;
+            $weight = $interaction->weight;
+
+            // Score categories
+            if ($product->category_id) {
+                $categoryScores[$product->category_id] = ($categoryScores[$product->category_id] ?? 0) + $weight;
+            }
+
+            // Score brands
+            if ($product->brand) {
+                $brandScores[$product->brand] = ($brandScores[$product->brand] ?? 0) + $weight;
+            }
+
+            // Score colors
+            if ($product->color) {
+                $colorScores[$product->color] = ($colorScores[$product->color] ?? 0) + $weight;
+            }
+
+            // Score sizes
+            if ($product->size) {
+                $sizeScores[$product->size] = ($sizeScores[$product->size] ?? 0) + $weight;
+            }
+
+            // Score conditions
+            if ($product->condition) {
+                $conditionScores[$product->condition] = ($conditionScores[$product->condition] ?? 0) + $weight;
+            }
+        }
+
+        // Get candidate products (exclude already viewed)
+        $candidates = Product::with('category')
             ->available()
-            ->where('stock', '>', 0);
+            ->where('stock', '>', 0)
+            ->whereNotIn('id', array_unique($viewedProductIds))
+            ->get();
 
-        // Exclude already viewed products
-        if (!empty($viewedProductIds)) {
-            $query->whereNotIn('id', $viewedProductIds);
-        }
+        // Score each candidate based on attribute matching
+        $scoredProducts = $candidates->map(function ($product) use ($categoryScores, $brandScores, $colorScores, $sizeScores, $conditionScores) {
+            $score = 0;
 
-        // If user has searched before, prioritize matching products
-        if ($lastSearch) {
-            $query->where(function ($q) use ($lastSearch, $categoriesFromViews) {
-                $q->where('name', 'like', "%{$lastSearch}%")
-                    ->orWhere('description', 'like', "%{$lastSearch}%")
-                    ->orWhere('brand', 'like', "%{$lastSearch}%");
-            });
-        } elseif (!empty($categoriesFromViews)) {
-            // Otherwise show products from categories they've browsed
-            $query->whereIn('category_id', $categoriesFromViews);
-        }
+            // Category matching
+            $score += $categoryScores[$product->category_id] ?? 0;
 
-        return $query->orderBy('created_at', 'desc')->limit($limit)->get();
+            // Brand matching
+            if ($product->brand && isset($brandScores[$product->brand])) {
+                $score += $brandScores[$product->brand] * 1.5; // Boost brand matches
+            }
+
+            // Color matching
+            if ($product->color && isset($colorScores[$product->color])) {
+                $score += $colorScores[$product->color] * 1.2;
+            }
+
+            // Size matching
+            if ($product->size && isset($sizeScores[$product->size])) {
+                $score += $sizeScores[$product->size] * 0.8;
+            }
+
+            // Condition matching
+            if ($product->condition && isset($conditionScores[$product->condition])) {
+                $score += $conditionScores[$product->condition] * 0.5;
+            }
+
+            // Small boost for newer products
+            $score += max(0, (30 - $product->created_at->diffInDays()) / 10);
+
+            $product->recommendation_score = $score;
+            return $product;
+        });
+
+        // Sort by score and return top results
+        return $scoredProducts
+            ->sortByDesc('recommendation_score')
+            ->take($limit)
+            ->values();
     }
 
     /**
@@ -327,66 +392,11 @@ class ShopController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            // Fall back to content-based filtering
+            // Fall back to enhanced content-based filtering
         }
 
-        // Fallback: Content-based filtering using user's interaction history
-        // Get last search query
-        $lastSearch = Interaction::where('user_id', $userId)
-            ->where('type', 'search')
-            ->whereNotNull('search_query')
-            ->orderBy('created_at', 'desc')
-            ->value('search_query');
-
-        // Get products matching last search
-        if ($lastSearch) {
-            $searchMatches = Product::select('id')
-                ->available()
-                ->where('stock', '>', 0)
-                ->where(function ($q) use ($lastSearch) {
-                    $q->where('name', 'like', "%{$lastSearch}%")
-                        ->orWhere('description', 'like', "%{$lastSearch}%")
-                        ->orWhere('brand', 'like', "%{$lastSearch}%");
-                })
-                ->limit($limit)
-                ->pluck('id')
-                ->toArray();
-
-            if (!empty($searchMatches)) {
-                return $searchMatches;
-            }
-        }
-
-        // Get categories from viewed products
-        $viewedProductIds = Interaction::where('user_id', $userId)
-            ->whereNotNull('product_id')
-            ->orderBy('created_at', 'desc')
-            ->pluck('product_id')
-            ->unique()
-            ->take(10)
-            ->toArray();
-
-        if (!empty($viewedProductIds)) {
-            $categoriesFromViews = Product::whereIn('id', $viewedProductIds)
-                ->pluck('category_id')
-                ->unique()
-                ->toArray();
-
-            if (!empty($categoriesFromViews)) {
-                $categoryMatches = Product::select('id')
-                    ->available()
-                    ->where('stock', '>', 0)
-                    ->whereIn('category_id', $categoriesFromViews)
-                    ->whereNotIn('id', $viewedProductIds)
-                    ->orderBy('created_at', 'desc')
-                    ->limit($limit)
-                    ->pluck('id')
-                    ->toArray();
-
-                return $categoryMatches;
-            }
-        }
-
-        return [];
+        // Enhanced Fallback: Use attribute matching
+        $products = $this->getProductsByAttributeMatching($userId, $limit);
+        return $products->pluck('id')->toArray();
     }
 }
