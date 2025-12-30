@@ -15,6 +15,17 @@ class ShopController extends Controller
     {
         $query = Product::with('category')->available()->where('stock', '>', 0);
 
+        // Track user's search for personalization
+        if ($request->filled('search') && auth()->check()) {
+            Interaction::create([
+                'user_id' => auth()->id(),
+                'product_id' => null,
+                'type' => 'search',
+                'session_id' => session()->getId(),
+                'search_query' => $request->input('search'),
+            ]);
+        }
+
         // Filter by category
         if ($request->has('category') && $request->category) {
             $query->where('category_id', $request->category);
@@ -43,6 +54,12 @@ class ShopController extends Controller
             });
         }
 
+        // Content-based filtering: if logged in and no active filters, boost personalized products
+        $personalizedProductIds = [];
+        if (auth()->check() && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price'])) {
+            $personalizedProductIds = $this->getPersonalizedProductIds(auth()->id());
+        }
+
         // Sort
         $sort = $request->get('sort', 'newest');
         switch ($sort) {
@@ -55,8 +72,24 @@ class ShopController extends Controller
             case 'popular':
                 $query->withCount('interactions')->orderBy('interactions_count', 'desc');
                 break;
+            case 'recommended':
+                // Personalized sort - boost products based on user history
+                if (!empty($personalizedProductIds)) {
+                    // Order by personalized relevance first, then by created_at
+                    $query->orderByRaw("FIELD(id, " . implode(',', $personalizedProductIds) . ") DESC")
+                          ->orderBy('created_at', 'desc');
+                } else {
+                    $query->orderBy('created_at', 'desc');
+                }
+                break;
             default:
-                $query->orderBy('created_at', 'desc');
+                // For default view with logged-in users, boost personalized products
+                if (!empty($personalizedProductIds)) {
+                    $query->orderByRaw("FIELD(id, " . implode(',', $personalizedProductIds) . ") DESC")
+                          ->orderBy('created_at', 'desc');
+                } else {
+                    $query->orderBy('created_at', 'desc');
+                }
         }
 
         $products = $query->paginate(10);
@@ -68,7 +101,9 @@ class ShopController extends Controller
             $cart = \App\Models\Cart::with('items.product')->where('user_id', auth()->id())->first();
         }
 
-        return view('shop.index', compact('products', 'categories', 'cart'));
+        $showPersonalizedLabel = auth()->check() && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price']) && !empty($personalizedProductIds);
+
+        return view('shop.index', compact('products', 'categories', 'cart', 'showPersonalizedLabel'));
     }
 
     public function show($id)
@@ -185,5 +220,173 @@ class ShopController extends Controller
             ->where('stock', '>', 0)
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Get personalized products based on user's interaction history
+     */
+    protected function getPersonalizedProducts($userId, $limit = 8)
+    {
+        // Try AI service first
+        try {
+            $aiServiceUrl = env('AI_SERVICE_URL', 'http://localhost:8000');
+            $response = Http::timeout(10)->post("{$aiServiceUrl}/recommend/for-user", [
+                'user_id' => $userId,
+                'limit' => $limit
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $productIds = $data['product_ids'] ?? [];
+
+                if (!empty($productIds)) {
+                    return Product::with('category')
+                        ->whereIn('id', $productIds)
+                        ->available()
+                        ->where('stock', '>', 0)
+                        ->limit($limit)
+                        ->get()
+                        ->sortBy(function ($product) use ($productIds) {
+                            return array_search($product->id, $productIds);
+                        })
+                        ->values();
+                }
+            }
+        } catch (\Exception $e) {
+            // Fall back to content-based filtering
+        }
+
+        // Fallback: Content-based filtering using user's interaction history
+        // Get products user has viewed or searched for
+        $viewedProductIds = Interaction::where('user_id', $userId)
+            ->whereNotNull('product_id')
+            ->orderBy('created_at', 'desc')
+            ->pluck('product_id')
+            ->unique()
+            ->take(10)
+            ->toArray();
+
+        // Get products from same categories as viewed products
+        $categoriesFromViews = [];
+        if (!empty($viewedProductIds)) {
+            $categoriesFromViews = Product::whereIn('id', $viewedProductIds)
+                ->pluck('category_id')
+                ->unique()
+                ->toArray();
+        }
+
+        // Get last search query
+        $lastSearch = Interaction::where('user_id', $userId)
+            ->where('type', 'search')
+            ->whereNotNull('search_query')
+            ->orderBy('created_at', 'desc')
+            ->value('search_query');
+
+        $query = Product::with('category')
+            ->available()
+            ->where('stock', '>', 0);
+
+        // Exclude already viewed products
+        if (!empty($viewedProductIds)) {
+            $query->whereNotIn('id', $viewedProductIds);
+        }
+
+        // If user has searched before, prioritize matching products
+        if ($lastSearch) {
+            $query->where(function ($q) use ($lastSearch, $categoriesFromViews) {
+                $q->where('name', 'like', "%{$lastSearch}%")
+                    ->orWhere('description', 'like', "%{$lastSearch}%")
+                    ->orWhere('brand', 'like', "%{$lastSearch}%");
+            });
+        } elseif (!empty($categoriesFromViews)) {
+            // Otherwise show products from categories they've browsed
+            $query->whereIn('category_id', $categoriesFromViews);
+        }
+
+        return $query->orderBy('created_at', 'desc')->limit($limit)->get();
+    }
+
+    /**
+     * Get personalized product IDs for sorting in main grid
+     */
+    protected function getPersonalizedProductIds($userId, $limit = 20)
+    {
+        // Try AI service first
+        try {
+            $aiServiceUrl = env('AI_SERVICE_URL', 'http://localhost:8000');
+            $response = Http::timeout(10)->post("{$aiServiceUrl}/recommend/for-user", [
+                'user_id' => $userId,
+                'limit' => $limit
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $productIds = $data['product_ids'] ?? [];
+                if (!empty($productIds)) {
+                    return array_slice($productIds, 0, $limit);
+                }
+            }
+        } catch (\Exception $e) {
+            // Fall back to content-based filtering
+        }
+
+        // Fallback: Content-based filtering using user's interaction history
+        // Get last search query
+        $lastSearch = Interaction::where('user_id', $userId)
+            ->where('type', 'search')
+            ->whereNotNull('search_query')
+            ->orderBy('created_at', 'desc')
+            ->value('search_query');
+
+        // Get products matching last search
+        if ($lastSearch) {
+            $searchMatches = Product::select('id')
+                ->available()
+                ->where('stock', '>', 0)
+                ->where(function ($q) use ($lastSearch) {
+                    $q->where('name', 'like', "%{$lastSearch}%")
+                        ->orWhere('description', 'like', "%{$lastSearch}%")
+                        ->orWhere('brand', 'like', "%{$lastSearch}%");
+                })
+                ->limit($limit)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($searchMatches)) {
+                return $searchMatches;
+            }
+        }
+
+        // Get categories from viewed products
+        $viewedProductIds = Interaction::where('user_id', $userId)
+            ->whereNotNull('product_id')
+            ->orderBy('created_at', 'desc')
+            ->pluck('product_id')
+            ->unique()
+            ->take(10)
+            ->toArray();
+
+        if (!empty($viewedProductIds)) {
+            $categoriesFromViews = Product::whereIn('id', $viewedProductIds)
+                ->pluck('category_id')
+                ->unique()
+                ->toArray();
+
+            if (!empty($categoriesFromViews)) {
+                $categoryMatches = Product::select('id')
+                    ->available()
+                    ->where('stock', '>', 0)
+                    ->whereIn('category_id', $categoriesFromViews)
+                    ->whereNotIn('id', $viewedProductIds)
+                    ->orderBy('created_at', 'desc')
+                    ->limit($limit)
+                    ->pluck('id')
+                    ->toArray();
+
+                return $categoryMatches;
+            }
+        }
+
+        return [];
     }
 }

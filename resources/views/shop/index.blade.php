@@ -70,7 +70,15 @@
                                 All Vintage Items
                             @endif
                         </h1>
-                        <p class="text-base text-zinc-600 mt-1">{{ $products->total() }} items found</p>
+                        <p class="text-base text-zinc-600 mt-1">
+                            {{ $products->total() }} items found
+                            @if($showPersonalizedLabel)
+                                <span class="inline-flex items-center gap-1 ml-2 px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 rounded-full">
+                                    <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                    Personalized for you
+                                </span>
+                            @endif
+                        </p>
                     </div>
                     <select onchange="window.location.href=this.value" class="px-4 py-2 text-sm border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300">
                         <option value="{{ route('shop.index', array_merge(request()->except('sort'), ['sort' => 'newest'])) }}" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>Newest</option>

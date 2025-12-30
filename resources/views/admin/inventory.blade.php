@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Inventory Management - d4ily.1</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
@@ -45,15 +46,16 @@
                                     <th class="px-5 py-3 text-left font-medium">Price</th>
                                     <th class="px-5 py-3 text-left font-medium">Stock</th>
                                     <th class="px-5 py-3 text-left font-medium">Condition</th>
+                                    <th class="px-5 py-3 text-left font-medium">Status</th>
                                     <th class="px-5 py-3 text-right font-medium">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100">
                                 @forelse($products as $product)
-                                <tr class="hover:bg-zinc-50">
+                                <tr class="hover:bg-zinc-50 {{ !$product->is_available ? 'bg-red-50/50' : '' }}">
                                     <td class="px-5 py-3">
                                         <div class="flex items-center gap-3">
-                                            <img src="{{ $product->images[0] ?? 'https://via.placeholder.com/40' }}" class="w-12 h-12 rounded object-cover">
+                                            <img src="{{ $product->images[0] ?? 'https://via.placeholder.com/40' }}" class="w-12 h-12 rounded object-cover {{ !$product->is_available ? 'opacity-50' : '' }}">
                                             <div>
                                                 <p class="font-medium text-zinc-900">{{ $product->name }}</p>
                                                 <p class="text-zinc-500 text-sm">{{ $product->brand }}</p>
@@ -68,7 +70,27 @@
                                         </span>
                                     </td>
                                     <td class="px-5 py-3 text-zinc-700 capitalize">{{ $product->condition }}</td>
+                                    <td class="px-5 py-3">
+                                        @if($product->is_available)
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
+                                                <i data-lucide="check-circle" class="w-3 h-3"></i>
+                                                Available
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-50 text-red-700">
+                                                <i data-lucide="x-circle" class="w-3 h-3"></i>
+                                                Sold
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td class="px-5 py-3 text-right">
+                                        <button onclick="toggleAvailability({{ $product->id }}, {{ $product->is_available ? 'false' : 'true' }})" class="text-zinc-600 hover:text-zinc-900 mr-2" title="{{ $product->is_available ? 'Mark as Sold' : 'Mark as Available' }}">
+                                            @if($product->is_available)
+                                                <i data-lucide="package" class="w-4 h-4"></i>
+                                            @else
+                                                <i data-lucide="package-open" class="w-4 h-4"></i>
+                                            @endif
+                                        </button>
                                         <button onclick='editProduct({
                     id: {{ $product->id }},
                     name: "{{ $product->name }}",
@@ -94,7 +116,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="px-5 py-8 text-center text-zinc-500">No products found</td>
+                                    <td colspan="7" class="px-5 py-8 text-center text-zinc-500">No products found</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -177,16 +199,26 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-zinc-700 mb-2">Product Image</label>
-                    <div class="flex items-center gap-4">
-                        <div id="imagePreview" class="hidden w-24 h-24 rounded-lg border border-zinc-200 overflow-hidden">
-                            <img id="previewImg" src="" class="w-full h-full object-cover">
+                    <label class="block text-sm font-medium text-zinc-700 mb-2">Product Images (up to 4)</label>
+                    <div class="space-y-3">
+                        <!-- Image Previews Container -->
+                        <div id="imagePreviews" class="flex flex-wrap gap-2">
+                            <!-- Previews will be added here dynamically -->
                         </div>
-                        <div class="flex-1">
-                            <input type="file" name="image" id="imageInput" accept="image/*" onchange="previewImage(this)" class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
-                            <p class="text-xs text-zinc-500 mt-1">Upload JPG, PNG or WebP (max 2MB)</p>
+                        <!-- File Inputs Container -->
+                        <div id="imageInputs" class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <input type="file" name="images[]" accept="image/*" onchange="previewImages(this)" class="flex-1 px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                                <button type="button" onclick="addImageInput()" class="px-3 py-2 text-sm bg-zinc-100 text-zinc-700 rounded-md hover:bg-zinc-200 flex items-center gap-1">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                    Add More
+                                </button>
+                            </div>
                         </div>
+                        <p class="text-xs text-zinc-500">Upload JPG, PNG or WebP (max 2MB each, up to 4 images)</p>
                     </div>
+                    <!-- Hidden input to track existing images for edit -->
+                    <input type="hidden" id="existingImages" name="existing_images" value="">
                 </div>
 
                 
@@ -201,15 +233,141 @@
     <script>
         lucide.createIcons();
 
-        function previewImage(input) {
+        let imageCount = 0;
+        const MAX_IMAGES = 4;
+        let existingImages = [];
+
+        function addImageInput() {
+            const container = document.getElementById('imageInputs');
+            const currentInputs = container.querySelectorAll('input[type="file"]');
+
+            if (currentInputs.length >= MAX_IMAGES) {
+                alert(`Maximum ${MAX_IMAGES} images allowed`);
+                return;
+            }
+
+            const inputDiv = document.createElement('div');
+            inputDiv.className = 'flex items-center gap-2';
+            inputDiv.innerHTML = `
+                <input type="file" name="images[]" accept="image/*" onchange="previewImages(this)" class="flex-1 px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                <button type="button" onclick="removeImageInput(this)" class="px-3 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 flex items-center gap-1">
+                    <i data-lucide="minus" class="w-4 h-4"></i>
+                    Remove
+                </button>
+            `;
+            container.appendChild(inputDiv);
+            lucide.createIcons();
+        }
+
+        function removeImageInput(button) {
+            const inputDiv = button.parentElement;
+            const fileInput = inputDiv.querySelector('input[type="file"]');
+
+            // Remove preview if exists
+            if (fileInput.dataset.previewIndex) {
+                const preview = document.getElementById(`preview-${fileInput.dataset.previewIndex}`);
+                if (preview) preview.remove();
+            }
+
+            inputDiv.remove();
+        }
+
+        function previewImages(input) {
+            const container = document.getElementById('imagePreviews');
+
             if (input.files && input.files[0]) {
+                const file = input.files[0];
+
+                // Validate file size
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size must be less than 2MB');
+                    input.value = '';
+                    return;
+                }
+
+                // Check total images
+                const allInputs = document.querySelectorAll('input[type="file"]');
+                const totalFiles = Array.from(allInputs).filter(i => i.files.length > 0).length;
+
+                if (totalFiles > MAX_IMAGES) {
+                    alert(`Maximum ${MAX_IMAGES} images allowed`);
+                    input.value = '';
+                    return;
+                }
+
+                // Remove existing preview for this input
+                if (input.dataset.previewIndex) {
+                    const existingPreview = document.getElementById(`preview-${input.dataset.previewIndex}`);
+                    if (existingPreview) existingPreview.remove();
+                }
+
+                // Create preview index
+                const previewIndex = 'preview-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                input.dataset.previewIndex = previewIndex;
+
+                // Create preview element
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    document.getElementById('previewImg').src = e.target.result;
-                    document.getElementById('imagePreview').classList.remove('hidden');
-                }
-                reader.readAsDataURL(input.files[0]);
+                    const previewDiv = document.createElement('div');
+                    previewDiv.id = previewIndex;
+                    previewDiv.className = 'relative w-20 h-20 rounded-lg border border-zinc-200 overflow-hidden';
+                    previewDiv.innerHTML = `
+                        <img src="${e.target.result}" class="w-full h-full object-cover">
+                        <button type="button" onclick="clearImageInput('${previewIndex}')" class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    `;
+                    container.appendChild(previewDiv);
+                    lucide.createIcons();
+                };
+                reader.readAsDataURL(file);
             }
+        }
+
+        function clearImageInput(previewIndex) {
+            const preview = document.getElementById(previewIndex);
+            if (preview) preview.remove();
+
+            // Find and clear the associated input
+            const input = document.querySelector(`input[data-preview-index="${previewIndex}"]`);
+            if (input) {
+                input.value = '';
+                delete input.dataset.previewIndex;
+            }
+        }
+
+        function showExistingImages(images) {
+            const container = document.getElementById('imagePreviews');
+            container.innerHTML = '';
+            existingImages = images || [];
+
+            existingImages.forEach((imgSrc, index) => {
+                const previewDiv = document.createElement('div');
+                previewDiv.className = `relative w-20 h-20 rounded-lg border border-zinc-200 overflow-hidden existing-preview`;
+                previewDiv.dataset.imageIndex = index;
+                previewDiv.innerHTML = `
+                    <img src="${imgSrc}" class="w-full h-full object-cover">
+                    <button type="button" onclick="removeExistingImage(${index})" class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                        <i data-lucide="x" class="w-3 h-3"></i>
+                    </button>
+                `;
+                container.appendChild(previewDiv);
+            });
+            lucide.createIcons();
+        }
+
+        function removeExistingImage(index) {
+            const preview = document.querySelector(`[data-image-index="${index}"]`);
+            if (preview) preview.remove();
+            existingImages = existingImages.filter((_, i) => i !== index);
+            document.getElementById('existingImages').value = JSON.stringify(existingImages);
+        }
+
+        function getRemainingImageSlots() {
+            const existingCount = existingImages.length;
+            const newFiles = Array.from(document.querySelectorAll('input[type="file"]'))
+                .filter(i => i.files.length > 0).length;
+            return MAX_IMAGES - existingCount - newFiles;
         }
 
         function openAddModal() {
@@ -217,7 +375,22 @@
             document.getElementById('productForm').action = '{{ route("admin.inventory.store") }}';
             document.getElementById('productForm').reset();
             document.getElementById('productId').value = '';
-            document.getElementById('imagePreview').classList.add('hidden');
+            document.getElementById('imagePreviews').innerHTML = '';
+            document.getElementById('existingImages').value = '';
+
+            // Reset file inputs to just one
+            const container = document.getElementById('imageInputs');
+            container.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <input type="file" name="images[]" accept="image/*" onchange="previewImages(this)" class="flex-1 px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                    <button type="button" onclick="addImageInput()" class="px-3 py-2 text-sm bg-zinc-100 text-zinc-700 rounded-md hover:bg-zinc-200 flex items-center gap-1">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Add More
+                    </button>
+                </div>
+            `;
+            existingImages = [];
+            lucide.createIcons();
             document.getElementById('productModal').classList.remove('hidden');
         }
 
@@ -254,13 +427,23 @@
             }
 
             form.querySelector('[name="color"]').value = product.color;
-            
-            // Show existing image
-            if (product.images && product.images[0]) {
-                document.getElementById('previewImg').src = product.images[0];
-                document.getElementById('imagePreview').classList.remove('hidden');
-            }
 
+            // Show existing images
+            showExistingImages(product.images || []);
+            document.getElementById('existingImages').value = JSON.stringify(product.images || []);
+
+            // Reset file inputs
+            const container = document.getElementById('imageInputs');
+            container.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <input type="file" name="images[]" accept="image/*" onchange="previewImages(this)" class="flex-1 px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                    <button type="button" onclick="addImageInput()" class="px-3 py-2 text-sm bg-zinc-100 text-zinc-700 rounded-md hover:bg-zinc-200 flex items-center gap-1">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Add More
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
             document.getElementById('productModal').classList.remove('hidden');
             console.log('Modal opened with form data');
         }
@@ -300,6 +483,34 @@
 
         function closeModal() {
             document.getElementById('productModal').classList.add('hidden');
+        }
+
+        function toggleAvailability(productId, makeAvailable) {
+            const action = makeAvailable ? 'mark as available' : 'mark as sold';
+            if (!confirm(`Are you sure you want to ${action} this product?`)) {
+                return;
+            }
+
+            fetch(`/admin/inventory/${productId}/toggle-availability`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ is_available: makeAvailable })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.message || 'Failed to update product status'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while updating the product status');
+            });
         }
     </script>
 </body>

@@ -23,6 +23,12 @@ Route::get('/register', [\App\Http\Controllers\Auth\AuthController::class, 'show
 Route::post('/register', [\App\Http\Controllers\Auth\AuthController::class, 'register'])->name('register.submit');
 Route::post('/logout', [\App\Http\Controllers\Auth\AuthController::class, 'logout'])->name('logout');
 
+// Password Reset Routes
+Route::get('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\PasswordResetController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'reset'])->name('password.update');
+
 // Shop Routes (Customer only)
 Route::middleware(['customer'])->group(function () {
     Route::get('/shop', [\App\Http\Controllers\Web\ShopController::class, 'index'])->name('shop.index');
@@ -39,6 +45,12 @@ Route::middleware(['customer'])->group(function () {
         Route::post('/checkout', [\App\Http\Controllers\Web\CartController::class, 'processCheckout'])->name('checkout.submit');
         Route::get('/order/confirmation/{orderId}', [\App\Http\Controllers\Web\CartController::class, 'orderConfirmation'])->name('order.confirmation');
         Route::get('/order/history', [\App\Http\Controllers\Web\CartController::class, 'orderHistory'])->name('order.history');
+        Route::put('/order/{orderId}/shipping-address', [\App\Http\Controllers\Web\CartController::class, 'updateShippingAddress'])->name('order.update-shipping');
+
+        // Profile routes
+        Route::get('/profile', [\App\Http\Controllers\Web\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [\App\Http\Controllers\Web\ProfileController::class, 'update'])->name('profile.update');
+        Route::put('/profile/password', [\App\Http\Controllers\Web\ProfileController::class, 'updatePassword'])->name('profile.password');
     });
 });
 
@@ -62,6 +74,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/inventory', [\App\Http\Controllers\Admin\AdminController::class, 'storeProduct'])->name('inventory.store');
     Route::put('/inventory/{id}', [\App\Http\Controllers\Admin\AdminController::class, 'updateProduct'])->name('inventory.update');
     Route::delete('/inventory/{id}', [\App\Http\Controllers\Admin\AdminController::class, 'deleteProduct'])->name('inventory.delete');
+    Route::post('/inventory/{id}/toggle-availability', [\App\Http\Controllers\Admin\AdminController::class, 'toggleAvailability'])->name('inventory.toggle');
     Route::get('/orders', [\App\Http\Controllers\Admin\AdminController::class, 'orders'])->name('orders');
     Route::put('/orders/{id}/status', [\App\Http\Controllers\Admin\AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
     Route::get('/customers', [\App\Http\Controllers\Admin\AdminController::class, 'customers'])->name('customers');

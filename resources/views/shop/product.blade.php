@@ -20,6 +20,9 @@
 
 @include('partials.navigation')
 
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2"></div>
+
     <!-- Product Content -->
     <main class="mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
         <!-- Breadcrumbs -->
@@ -190,6 +193,37 @@
     <script>
         lucide.createIcons();
 
+        // Toast notification function
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const bgColor = type === 'success' ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200';
+            const iconColor = type === 'success' ? 'text-emerald-600' : 'text-red-600';
+            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
+            const textColor = type === 'success' ? 'text-emerald-800' : 'text-red-800';
+
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-lg border shadow-lg ${bgColor} min-w-[300px] transform transition-all duration-300 translate-x-full opacity-0`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-5 h-5 ${iconColor}"></i>
+                <span class="text-sm font-medium ${textColor}">${message}</span>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full', 'opacity-0');
+            }, 10);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-x-full', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
         // Update cart count
         async function updateCartCount() {
             try {
@@ -261,6 +295,9 @@
                     btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Added!';
                     lucide.createIcons();
 
+                    // Show success toast
+                    showToast('Item added to cart successfully!', 'success');
+
                     // Update cart count immediately
                     const cartCountElement = document.getElementById('cart-count');
                     if (cartCountElement) {
@@ -275,16 +312,19 @@
                     }, 2000);
                 } else {
                     if (response.status === 401) {
-                        window.location.href = '{{ route("login") }}';
+                        showToast('Please login to add items to cart', 'error');
+                        setTimeout(() => {
+                            window.location.href = '{{ route("login") }}';
+                        }, 1500);
                     } else if (response.status === 409) {
                         const data = await response.json();
-                        alert(data.error || 'This item is already in your cart');
+                        showToast(data.error || 'This item is already in your cart', 'error');
                         btn.innerHTML = '<i data-lucide="shopping-cart" class="w-4 h-4"></i> In Cart';
                         btn.disabled = true;
                         lucide.createIcons();
                     } else {
                         const data = await response.json();
-                        alert(data.error || 'Failed to add to cart');
+                        showToast(data.error || 'Failed to add to cart', 'error');
                         btn.innerHTML = originalHTML;
                         btn.disabled = false;
                         lucide.createIcons();
@@ -292,7 +332,7 @@
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Something went wrong.');
+                showToast('Something went wrong. Please try again.', 'error');
                 btn.innerHTML = originalHTML;
                 btn.disabled = false;
                 lucide.createIcons();
@@ -319,22 +359,27 @@
                         btn.innerHTML = '<i data-lucide="heart" class="w-5 h-5" fill="currentColor"></i>';
                         btn.classList.remove('text-zinc-500', 'hover:text-red-500', 'border-zinc-200', 'hover:bg-zinc-50');
                         btn.classList.add('text-red-500', 'border-red-200', 'bg-red-50');
+                        showToast('Added to wishlist!', 'success');
                     } else {
                         btn.innerHTML = '<i data-lucide="heart" class="w-5 h-5"></i>';
                         btn.classList.remove('text-red-500', 'border-red-200', 'bg-red-50');
                         btn.classList.add('text-zinc-500', 'hover:text-red-500', 'border-zinc-200', 'hover:bg-zinc-50');
+                        showToast('Removed from wishlist', 'success');
                     }
                     lucide.createIcons();
                 } else {
                     if (response.status === 401) {
-                        window.location.href = '{{ route("login") }}';
+                        showToast('Please login to add items to wishlist', 'error');
+                        setTimeout(() => {
+                            window.location.href = '{{ route("login") }}';
+                        }, 1500);
                     } else {
-                        alert('Failed to toggle wishlist');
+                        showToast('Failed to toggle wishlist', 'error');
                     }
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Something went wrong.');
+                showToast('Something went wrong. Please try again.', 'error');
             }
         }
     </script>

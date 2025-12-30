@@ -41,11 +41,75 @@
                             <i data-lucide="map-pin" class="w-5 h-5"></i>
                             Shipping Address
                         </h3>
-                        <textarea name="shipping_address"
-                                  placeholder="Enter your full shipping address including street, city, state, and zip code"
-                                  class="w-full px-4 py-3 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors"
-                                  rows="4"
-                                  required>{{ old('shipping_address') }}</textarea>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-700 mb-1">Full Name</label>
+                                <input type="text" name="shipping_name"
+                                    placeholder="Enter your full name"
+                                    class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm"
+                                    required value="{{ old('shipping_name', auth()->user()->name ?? '') }}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-700 mb-1">Phone Number</label>
+                                <input type="tel" name="shipping_phone"
+                                    placeholder="e.g., 012-3456789"
+                                    class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm"
+                                    required value="{{ old('shipping_phone', auth()->user()->phone ?? '') }}">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-zinc-700 mb-1">Street Address</label>
+                                <input type="text" name="shipping_street"
+                                    placeholder="House/Unit number, Street name"
+                                    class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm"
+                                    required value="{{ old('shipping_street') }}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-700 mb-1">City</label>
+                                <input type="text" name="shipping_city"
+                                    placeholder="e.g., Kuala Lumpur"
+                                    class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm"
+                                    required value="{{ old('shipping_city') }}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-700 mb-1">Postcode</label>
+                                <input type="text" name="shipping_postcode"
+                                    placeholder="e.g., 50000"
+                                    pattern="[0-9]{5}"
+                                    class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm"
+                                    required value="{{ old('shipping_postcode') }}">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-700 mb-1">State</label>
+                                <select name="shipping_state"
+                                    class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm bg-white"
+                                    required>
+                                    <option value="">Select State</option>
+                                    <option value="Johor" {{ old('shipping_state') == 'Johor' ? 'selected' : '' }}>Johor</option>
+                                    <option value="Kedah" {{ old('shipping_state') == 'Kedah' ? 'selected' : '' }}>Kedah</option>
+                                    <option value="Kelantan" {{ old('shipping_state') == 'Kelantan' ? 'selected' : '' }}>Kelantan</option>
+                                    <option value="Melaka" {{ old('shipping_state') == 'Melaka' ? 'selected' : '' }}>Melaka</option>
+                                    <option value="Negeri Sembilan" {{ old('shipping_state') == 'Negeri Sembilan' ? 'selected' : '' }}>Negeri Sembilan</option>
+                                    <option value="Pahang" {{ old('shipping_state') == 'Pahang' ? 'selected' : '' }}>Pahang</option>
+                                    <option value="Penang" {{ old('shipping_state') == 'Penang' ? 'selected' : '' }}>Penang</option>
+                                    <option value="Perak" {{ old('shipping_state') == 'Perak' ? 'selected' : '' }}>Perak</option>
+                                    <option value="Perlis" {{ old('shipping_state') == 'Perlis' ? 'selected' : '' }}>Perlis</option>
+                                    <option value="Sabah" {{ old('shipping_state') == 'Sabah' ? 'selected' : '' }}>Sabah</option>
+                                    <option value="Sarawak" {{ old('shipping_state') == 'Sarawak' ? 'selected' : '' }}>Sarawak</option>
+                                    <option value="Selangor" {{ old('shipping_state') == 'Selangor' ? 'selected' : '' }}>Selangor</option>
+                                    <option value="Terengganu" {{ old('shipping_state') == 'Terengganu' ? 'selected' : '' }}>Terengganu</option>
+                                    <option value="Kuala Lumpur" {{ old('shipping_state') == 'Kuala Lumpur' ? 'selected' : '' }}>Kuala Lumpur</option>
+                                    <option value="Labuan" {{ old('shipping_state') == 'Labuan' ? 'selected' : '' }}>Labuan</option>
+                                    <option value="Putrajaya" {{ old('shipping_state') == 'Putrajaya' ? 'selected' : '' }}>Putrajaya</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-700 mb-1">Country</label>
+                                <input type="text" name="shipping_country"
+                                    value="Malaysia"
+                                    class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm bg-zinc-100"
+                                    readonly>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Payment Method -->

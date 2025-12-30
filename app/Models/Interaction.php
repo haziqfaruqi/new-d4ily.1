@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Interaction extends Model
 {
-    protected $fillable = ['user_id', 'product_id', 'type', 'session_id'];
+    protected $fillable = ['user_id', 'product_id', 'type', 'session_id', 'search_query'];
 
     public function user()
     {

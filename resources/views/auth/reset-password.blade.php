@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - D4ily.1</title>
+    <title>Reset Password - D4ily.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -29,21 +29,15 @@
             </a>
         </div>
 
-        <!-- Login Card -->
+        <!-- Reset Password Card -->
         <div class="bg-white rounded-2xl shadow-xl border border-zinc-200 p-8">
-            <div class="mb-6">
-                <h2 class="text-xl font-bold text-zinc-900">Welcome back</h2>
-                <p class="text-sm text-zinc-600 mt-1">Sign in to your account to continue</p>
-            </div>
-
-            @if(session('error'))
-                <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="alert-circle" class="w-4 h-4 text-red-600"></i>
-                        <p class="text-sm text-red-800">{{ session('error') }}</p>
-                    </div>
+            <div class="mb-6 text-center">
+                <div class="w-12 h-12 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="lock" class="w-6 h-6 text-zinc-700"></i>
                 </div>
-            @endif
+                <h2 class="text-xl font-bold text-zinc-900">Reset Password</h2>
+                <p class="text-sm text-zinc-600 mt-2">Enter your new password below.</p>
+            </div>
 
             @if(session('success'))
                 <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
@@ -54,15 +48,29 @@
                 </div>
             @endif
 
-            <form action="{{ route('login.submit') }}" method="POST" class="space-y-4">
+            @if ($errors->any())
+                <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 mt-0.5"></i>
+                        <div class="text-sm text-red-800">
+                            @foreach ($errors->all() as $error)
+                                <p>{{ $error }}</p>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <form action="{{ route('password.update') }}" method="POST" class="space-y-4">
                 @csrf
+                <input type="hidden" name="token" value="{{ $token }}">
 
                 <div>
                     <label for="email" class="block text-sm font-medium text-zinc-700 mb-2">Email address</label>
                     <div class="relative">
                         <i data-lucide="mail"
                             class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"></i>
-                        <input type="email" id="email" name="email" value="{{ old('email') }}" required
+                        <input type="email" id="email" name="email" value="{{ old('email', $email) }}" required
                             class="w-full pl-10 pr-4 py-2.5 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
                             placeholder="you@example.com">
                     </div>
@@ -72,7 +80,7 @@
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-zinc-700 mb-2">Password</label>
+                    <label for="password" class="block text-sm font-medium text-zinc-700 mb-2">New Password</label>
                     <div class="relative">
                         <i data-lucide="lock"
                             class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"></i>
@@ -85,45 +93,29 @@
                     @enderror
                 </div>
 
-                <div class="flex items-center justify-between">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="remember"
-                            class="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900">
-                        <span class="text-sm text-zinc-600">Remember me</span>
-                    </label>
-                    <a href="{{ route('password.request') }}" class="text-sm font-medium text-zinc-900 hover:text-zinc-700">Forgot password?</a>
+                <div>
+                    <label for="password_confirmation" class="block text-sm font-medium text-zinc-700 mb-2">Confirm New Password</label>
+                    <div class="relative">
+                        <i data-lucide="lock"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"></i>
+                        <input type="password" id="password_confirmation" name="password_confirmation" required
+                            class="w-full pl-10 pr-4 py-2.5 border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent transition-all"
+                            placeholder="••••••••">
+                    </div>
                 </div>
 
                 <button type="submit"
                     class="w-full py-3 bg-zinc-900 text-white rounded-lg font-medium hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2">
-                    <span>Sign in</span>
-                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    <span>Reset Password</span>
+                    <i data-lucide="check" class="w-4 h-4"></i>
                 </button>
             </form>
 
-            <div class="mt-6 pt-6 border-t border-zinc-200">
-                <p class="text-center text-sm text-zinc-600">
-                    Don't have an account?
-                    <a href="{{ route('register') }}" class="font-medium text-zinc-900 hover:text-zinc-700">Sign up</a>
-                </p>
-            </div>
-
-            <!-- Demo Accounts -->
-            <div class="mt-6 p-4 rounded-lg bg-zinc-50 border border-zinc-200">
-                <p class="text-xs font-semibold text-zinc-700 mb-2 flex items-center gap-1">
-                    <i data-lucide="info" class="w-3 h-3"></i>
-                    Demo Accounts
-                </p>
-                <div class="space-y-2 text-xs text-zinc-600">
-                    <div class="flex justify-between">
-                        <span class="font-medium">Admin:</span>
-                        <span class="font-mono">admin@d4ily.com / 12345678</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="font-medium">User:</span>
-                        <span class="font-mono">haziqfaruqi@gmail.com / 12345678</span>
-                    </div>
-                </div>
+            <div class="mt-6 text-center">
+                <a href="{{ route('login') }}" class="text-sm font-medium text-zinc-900 hover:text-zinc-700 inline-flex items-center gap-1">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                    Back to login
+                </a>
             </div>
         </div>
 

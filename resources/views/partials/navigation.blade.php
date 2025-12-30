@@ -44,6 +44,10 @@
                                 Admin Dashboard
                             </a>
                         @endif
+                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                            My Profile
+                        </a>
                         <a href="{{ route('shop.recommendations') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
                             <i data-lucide="sparkles" class="w-4 h-4"></i>
                             Recommendations

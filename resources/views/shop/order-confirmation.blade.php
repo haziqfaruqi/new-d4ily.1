@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Order Confirmation - D4ily.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -11,6 +12,7 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
+<body class="bg-zinc-50">
 @include('partials.navigation')
 
     <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -110,8 +112,80 @@
                     @endif
 
                     <div class="pb-4 border-b">
-                        <span class="text-sm text-zinc-600 block mb-2">Shipping Address</span>
-                        <span class="font-medium text-zinc-900">{{ $order->shipping_address }}</span>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm text-zinc-600">Shipping Address</span>
+                            @if(in_array($order->status, ['processing', 'pending', 'confirmed']))
+                                <button onclick="openEditAddressModal()" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                                    <i data-lucide="edit-2" class="w-3 h-3"></i>
+                                    Edit
+                                </button>
+                            @endif
+                        </div>
+                        <div class="text-zinc-900">
+                            @php
+                                // Parse the JSON-encoded shipping address
+                                $addressData = json_decode($order->shipping_address, true);
+
+                                // Handle legacy comma-separated format for old orders
+                                if (!$addressData) {
+                                    $parts = explode(', ', $order->shipping_address);
+
+                                    // Handle case where street address contains commas
+                                    // Expected format: name, phone, street, city, postcode, state, country
+                                    // But if street has comma: name, phone, street_part1, street_part2, city, postcode, state, country
+                                    $partCount = count($parts);
+
+                                    if ($partCount === 8) {
+                                        // Street had a comma - merge parts 2 and 3
+                                        $addressData = [
+                                            'name' => $parts[0] ?? '',
+                                            'phone' => $parts[1] ?? '',
+                                            'street' => ($parts[2] ?? '') . ', ' . ($parts[3] ?? ''),
+                                            'city' => $parts[4] ?? '',
+                                            'postcode' => $parts[5] ?? '',
+                                            'state' => $parts[6] ?? '',
+                                            'country' => $parts[7] ?? 'Malaysia',
+                                        ];
+                                    } elseif ($partCount === 7) {
+                                        // Standard format without comma in street
+                                        $addressData = [
+                                            'name' => $parts[0] ?? '',
+                                            'phone' => $parts[1] ?? '',
+                                            'street' => $parts[2] ?? '',
+                                            'city' => $parts[3] ?? '',
+                                            'postcode' => $parts[4] ?? '',
+                                            'state' => $parts[5] ?? '',
+                                            'country' => $parts[6] ?? 'Malaysia',
+                                        ];
+                                    } else {
+                                        // Fallback for any other format
+                                        $addressData = [
+                                            'name' => $parts[0] ?? '',
+                                            'phone' => $parts[1] ?? '',
+                                            'street' => $parts[2] ?? '',
+                                            'city' => $parts[3] ?? '',
+                                            'postcode' => $parts[4] ?? '',
+                                            'state' => $parts[5] ?? '',
+                                            'country' => 'Malaysia',
+                                        ];
+                                    }
+                                }
+
+                                $name = $addressData['name'] ?? '';
+                                $phone = $addressData['phone'] ?? '';
+                                $street = $addressData['street'] ?? '';
+                                $city = $addressData['city'] ?? '';
+                                $postcode = $addressData['postcode'] ?? '';
+                                $state = $addressData['state'] ?? '';
+                                $country = $addressData['country'] ?? 'Malaysia';
+                            @endphp
+
+                            <p class="font-medium text-base mb-1">{{ $name }}</p>
+                            <p class="text-sm text-zinc-600 mb-3">{{ $phone }}</p>
+                            <p class="text-sm">{{ $street }}</p>
+                            <p class="text-sm">{{ $city }}, {{ $postcode }} {{ $state }}</p>
+                            <p class="text-sm text-zinc-600">{{ $country }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -150,7 +224,7 @@
                     <div class="space-y-3">
                         @foreach($order->items as $item)
                             <div class="flex items-center gap-3 p-3 bg-zinc-50 rounded-md">
-                                <img src="{{ $item->product->images[0] ?? 'https://via.placeholder.com/60' }}"
+                                <img src="{{ asset($item->product->images[0] ?? '') ?: 'https://via.placeholder.com/60x80?text=No+Image' }}"
                                      alt="{{ $item->product->name }}"
                                      class="w-12 h-16 object-cover rounded border border-zinc-200">
                                 <div class="flex-1">
@@ -200,8 +274,95 @@
         </div>
     </div>
 
+    {{-- Edit Address Modal --}}
+    @if(in_array($order->status, ['processing', 'pending', 'confirmed']))
+    <div id="editAddressModal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-zinc-900">Edit Shipping Address</h3>
+                <button onclick="closeEditAddressModal()" class="text-zinc-400 hover:text-zinc-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="editAddressForm" class="space-y-4">
+                @csrf
+                <input type="hidden" name="_method" value="PUT">
+                <div>
+                    <label class="block text-sm font-medium text-zinc-700 mb-1">Full Name</label>
+                    <input type="text" name="shipping_name" id="edit_name" required
+                        class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-zinc-700 mb-1">Phone Number</label>
+                    <input type="tel" name="shipping_phone" id="edit_phone" required
+                        class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-zinc-700 mb-1">Street Address</label>
+                    <input type="text" name="shipping_street" id="edit_street" required
+                        class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-700 mb-1">City</label>
+                        <input type="text" name="shipping_city" id="edit_city" required
+                            class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-700 mb-1">Postcode</label>
+                        <input type="text" name="shipping_postcode" id="edit_postcode" required
+                            class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-zinc-700 mb-1">State</label>
+                    <select name="shipping_state" id="edit_state" required
+                        class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm bg-white">
+                        <option value="">Select State</option>
+                        <option value="Johor">Johor</option>
+                        <option value="Kedah">Kedah</option>
+                        <option value="Kelantan">Kelantan</option>
+                        <option value="Melaka">Melaka</option>
+                        <option value="Negeri Sembilan">Negeri Sembilan</option>
+                        <option value="Pahang">Pahang</option>
+                        <option value="Penang">Penang</option>
+                        <option value="Perak">Perak</option>
+                        <option value="Perlis">Perlis</option>
+                        <option value="Sabah">Sabah</option>
+                        <option value="Sarawak">Sarawak</option>
+                        <option value="Selangor">Selangor</option>
+                        <option value="Terengganu">Terengganu</option>
+                        <option value="Kuala Lumpur">Kuala Lumpur</option>
+                        <option value="Labuan">Labuan</option>
+                        <option value="Putrajaya">Putrajaya</option>
+                    </select>
+                </div>
+
+                <div id="formError" class="hidden bg-red-50 border border-red-200 rounded-md p-3">
+                    <p class="text-sm text-red-800" id="formErrorText"></p>
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeEditAddressModal()"
+                        class="flex-1 px-4 py-2.5 border border-zinc-200 text-zinc-700 rounded-md font-medium hover:bg-zinc-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-md font-medium hover:bg-indigo-700 transition-colors">
+                        Save Address
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endif
+
     <script>
-        lucide.createIcons();
+        // Ensure DOM is fully loaded before creating icons
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
+        });
 
         // Update cart count on page load
         async function updateCartCount() {
@@ -223,6 +384,132 @@
 
         // Update cart count on page load
         updateCartCount();
+
+        // Edit Address Modal functionality
+        const modal = document.getElementById('editAddressModal');
+        @php
+            $decodedAddress = json_decode($order->shipping_address, true);
+
+            // Handle legacy comma-separated format for old orders
+            if (!$decodedAddress) {
+                $parts = explode(', ', $order->shipping_address);
+                $partCount = count($parts);
+
+                if ($partCount === 8) {
+                    // Street had a comma - merge parts 2 and 3
+                    $decodedAddress = [
+                        'name' => $parts[0] ?? '',
+                        'phone' => $parts[1] ?? '',
+                        'street' => ($parts[2] ?? '') . ', ' . ($parts[3] ?? ''),
+                        'city' => $parts[4] ?? '',
+                        'postcode' => $parts[5] ?? '',
+                        'state' => $parts[6] ?? '',
+                        'country' => $parts[7] ?? 'Malaysia',
+                    ];
+                } elseif ($partCount === 7) {
+                    // Standard format without comma in street
+                    $decodedAddress = [
+                        'name' => $parts[0] ?? '',
+                        'phone' => $parts[1] ?? '',
+                        'street' => $parts[2] ?? '',
+                        'city' => $parts[3] ?? '',
+                        'postcode' => $parts[4] ?? '',
+                        'state' => $parts[5] ?? '',
+                        'country' => $parts[6] ?? 'Malaysia',
+                    ];
+                } else {
+                    // Fallback
+                    $decodedAddress = [
+                        'name' => $parts[0] ?? '',
+                        'phone' => $parts[1] ?? '',
+                        'street' => $parts[2] ?? '',
+                        'city' => $parts[3] ?? '',
+                        'postcode' => $parts[4] ?? '',
+                        'state' => $parts[5] ?? '',
+                        'country' => 'Malaysia',
+                    ];
+                }
+            }
+        @endphp
+        const addressData = @json($decodedAddress);
+
+        function openEditAddressModal() {
+            // Pre-fill form with current address
+            document.getElementById('edit_name').value = addressData.name || '';
+            document.getElementById('edit_phone').value = addressData.phone || '';
+            document.getElementById('edit_street').value = addressData.street || '';
+            document.getElementById('edit_city').value = addressData.city || '';
+            document.getElementById('edit_postcode').value = addressData.postcode || '';
+            document.getElementById('edit_state').value = addressData.state || '';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeEditAddressModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('formError').classList.add('hidden');
+        }
+
+        // Handle form submission
+        document.getElementById('editAddressForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const errorDiv = document.getElementById('formError');
+            const errorText = document.getElementById('formErrorText');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Saving...';
+            errorDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('{{ route('order.update-shipping', $order->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Show success state on button
+                    submitBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4 inline"></i> Saved!';
+                    lucide.createIcons();
+
+                    // Close modal and reload after brief delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 800);
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                    errorText.textContent = data.error || 'Failed to update address. Please try again.';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error updating address:', error);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+                errorText.textContent = 'An error occurred. Please try again.';
+                errorDiv.classList.remove('hidden');
+            }
+        });
+
+        // Close modal on outside click
+        modal?.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeEditAddressModal();
+            }
+        });
     </script>
 </body>
 </html>

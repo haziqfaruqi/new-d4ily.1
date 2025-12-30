@@ -60,21 +60,31 @@ class AdminController extends Controller
             'size' => 'required|string',
             'brand' => 'required|string',
             'color' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'featured' => 'boolean',
         ]);
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('uploads/products'), $filename);
-            $validated['images'] = ['/uploads/products/' . $filename];
-        } else {
-            $validated['images'] = [];
-        }
+        // Handle multiple image uploads - filter out null/empty values
+        $images = [];
+        if ($request->hasFile('images')) {
+            $uploadedFiles = array_filter($request->file('images'), function($file) {
+                return $file !== null && $file->isValid();
+            });
 
-                $validated['stock'] = 1; // All products have stock of 1
+            if (count($uploadedFiles) > 4) {
+                return redirect()->back()->with('error', 'Maximum 4 images allowed');
+            }
+
+            foreach ($uploadedFiles as $image) {
+                $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('uploads/products'), $filename);
+                $images[] = '/uploads/products/' . $filename;
+            }
+        }
+        $validated['images'] = $images;
+
+        $validated['stock'] = 1; // All products have stock of 1
 
         Product::create($validated);
 
@@ -94,26 +104,43 @@ class AdminController extends Controller
             'size' => 'required|string',
             'brand' => 'required|string',
             'color' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'existing_images' => 'nullable|array',
             'featured' => 'boolean',
         ]);
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
-            if (!empty($product->images[0]) && file_exists(public_path($product->images[0]))) {
-                unlink(public_path($product->images[0]));
-            }
+        // Start with existing images that weren't removed
+        $existingImages = $request->input('existing_images');
+        if (is_string($existingImages)) {
+            $existingImages = json_decode($existingImages, true) ?? [];
+        }
+        $images = $existingImages ?? [];
 
-            $image = $request->file('image');
-            $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('uploads/products'), $filename);
-            $validated['images'] = ['/uploads/products/' . $filename];
-        } else {
-            $validated['images'] = $product->images;
+        // Delete removed images from filesystem
+        foreach ($product->images as $oldImage) {
+            if (!in_array($oldImage, $images) && file_exists(public_path($oldImage))) {
+                unlink(public_path($oldImage));
+            }
         }
 
-                $validated['stock'] = 1; // All products have stock of 1
+        // Add new images - filter out null/empty values
+        if ($request->hasFile('images')) {
+            $uploadedFiles = array_filter($request->file('images'), function($file) {
+                return $file !== null && $file->isValid();
+            });
+
+            foreach ($uploadedFiles as $image) {
+                if (count($images) < 4) {
+                    $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                    $image->move(public_path('uploads/products'), $filename);
+                    $images[] = '/uploads/products/' . $filename;
+                }
+            }
+        }
+        $validated['images'] = $images;
+
+        $validated['stock'] = 1; // All products have stock of 1
 
         $product->update($validated);
 
@@ -126,6 +153,22 @@ class AdminController extends Controller
         $product->delete();
 
         return redirect()->route('admin.inventory')->with('success', 'Product deleted successfully!');
+    }
+
+    public function toggleAvailability(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+
+        $request->validate([
+            'is_available' => 'required|boolean',
+        ]);
+
+        $product->update(['is_available' => $request->is_available]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $request->is_available ? 'Product marked as available' : 'Product marked as sold',
+        ]);
     }
 
     public function updateOrderStatus(Request $request, $id)

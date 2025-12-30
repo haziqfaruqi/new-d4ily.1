@@ -172,9 +172,26 @@ class CartController extends Controller
         }
 
         $request->validate([
-            'shipping_address' => 'required|string',
+            'shipping_name' => 'required|string|max:255',
+            'shipping_phone' => 'required|string|max:20',
+            'shipping_street' => 'required|string',
+            'shipping_city' => 'required|string',
+            'shipping_postcode' => 'required|string',
+            'shipping_state' => 'required|string',
             'payment_method' => 'required|string|in:toyyibpay,bank_transfer',
         ]);
+
+        // Store address as JSON to handle commas in street address
+        $shippingAddressData = [
+            'name' => $request->shipping_name,
+            'phone' => $request->shipping_phone,
+            'street' => $request->shipping_street,
+            'city' => $request->shipping_city,
+            'postcode' => $request->shipping_postcode,
+            'state' => $request->shipping_state,
+            'country' => $request->shipping_country ?? 'Malaysia',
+        ];
+        $shippingAddress = json_encode($shippingAddressData);
 
         try {
             // Calculate totals
@@ -188,7 +205,7 @@ class CartController extends Controller
                 'user_id' => auth()->id(),
                 'status' => $request->payment_method === 'toyyibpay' ? 'pending' : 'confirmed',
                 'total_price' => $total,
-                'shipping_address' => $request->shipping_address,
+                'shipping_address' => $shippingAddress,
                 'payment_method' => $request->payment_method,
                 'subtotal' => $subtotal,
                 'tax' => $tax,
@@ -307,9 +324,9 @@ class CartController extends Controller
         if ($statusId && $statusId == '1' && $order->payment_status !== 'paid') {
             Log::info('Payment successful via return URL, marking products as unavailable for order ' . $order->id);
 
-            // Update order status
+            // Update order status to 'processing' (not delivered yet - admin will update)
             $order->update([
-                'status' => 'delivered',
+                'status' => 'processing',
                 'payment_status' => 'paid'
             ]);
 
@@ -374,9 +391,9 @@ class CartController extends Controller
             $isPaid = $paymentStatus == '1' || $paymentStatus == '2' || $paymentStatus == '3';
 
             if ($isPaid) {
-                // Update order status
+                // Update order status to 'processing' (not delivered yet - admin will update)
                 $order->update([
-                    'status' => 'delivered',
+                    'status' => 'processing',
                     'payment_status' => 'paid'
                 ]);
 
@@ -439,5 +456,51 @@ class CartController extends Controller
     public function cancelCheckout()
     {
         return redirect()->route('cart.index')->with('info', 'Payment was cancelled. You can return to your cart and try again.');
+    }
+
+    public function updateShippingAddress(Request $request, $orderId)
+    {
+        $order = Order::where('id', $orderId)->where('user_id', auth()->id())->first();
+
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
+        }
+
+        // Only allow address changes when order is in 'processing' status
+        if (!in_array($order->status, ['processing', 'pending', 'confirmed'])) {
+            return response()->json([
+                'error' => 'Address can only be changed while order is being processed. Contact support for changes.'
+            ], 403);
+        }
+
+        $request->validate([
+            'shipping_name' => 'required|string|max:255',
+            'shipping_phone' => 'required|string|max:20',
+            'shipping_street' => 'required|string',
+            'shipping_city' => 'required|string',
+            'shipping_postcode' => 'required|string',
+            'shipping_state' => 'required|string',
+        ]);
+
+        // Store address as JSON to handle commas in street address
+        $shippingAddressData = [
+            'name' => $request->shipping_name,
+            'phone' => $request->shipping_phone,
+            'street' => $request->shipping_street,
+            'city' => $request->shipping_city,
+            'postcode' => $request->shipping_postcode,
+            'state' => $request->shipping_state,
+            'country' => $request->shipping_country ?? 'Malaysia',
+        ];
+        $shippingAddress = json_encode($shippingAddressData);
+
+        $order->update([
+            'shipping_address' => $shippingAddress
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Shipping address updated successfully'
+        ]);
     }
 }
