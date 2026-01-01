@@ -19,7 +19,11 @@
       "Bash(netstat:*)",
       "Bash(powershell:*)",
       "Bash(python:*)",
-      "Bash(curl:*)"
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python3:*)",
+      "Bash(C:\\Users\\Mawaddah Afrina\\AppData\\Local\\Programs\\Python\\Python311\\python.exe:*)",
+      "Bash(\"C:\\Users\\Mawaddah Afrina\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\":*)"
     ],
     "deny": [],
     "ask": []
