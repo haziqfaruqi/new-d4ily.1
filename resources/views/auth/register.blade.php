@@ -161,7 +161,7 @@
                             <i data-lucide="user" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400"></i>
                             <input type="text" id="name" name="name" value="{{ old('name') }}" required
                                 class="w-full pl-11 pr-4 py-3 border-2 border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-stone-800 transition-all"
-                                placeholder="John Doe">
+                                placeholder="Charles Leclerc">
                         </div>
                         @error('name')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
