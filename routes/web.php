@@ -32,8 +32,8 @@ Route::post('/reset-password', [\App\Http\Controllers\Auth\PasswordResetControll
 // Shop Routes (Customer only)
 Route::middleware(['customer'])->group(function () {
     Route::get('/shop', [\App\Http\Controllers\Web\ShopController::class, 'index'])->name('shop.index');
+    Route::get('/shop/recommendations', [\App\Http\Controllers\Web\ShopController::class, 'recommendations'])->name('shop.recommendations');
     Route::get('/shop/product/{id}', [\App\Http\Controllers\Web\ShopController::class, 'show'])->name('shop.product');
-    Route::get('/shop/recommendations', [\App\Http\Controllers\Web\ShopController::class, 'recommendations'])->name('shop.recommendations')->middleware('auth');
 
     // Cart & Wishlist Routes (require auth)
     Route::middleware(['auth'])->group(function () {
@@ -72,6 +72,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/inventory', [\App\Http\Controllers\Admin\AdminController::class, 'inventory'])->name('inventory');
     Route::post('/inventory', [\App\Http\Controllers\Admin\AdminController::class, 'storeProduct'])->name('inventory.store');
+    Route::get('/inventory/{id}/edit', [\App\Http\Controllers\Admin\AdminController::class, 'editProduct'])->name('inventory.edit');
     Route::put('/inventory/{id}', [\App\Http\Controllers\Admin\AdminController::class, 'updateProduct'])->name('inventory.update');
     Route::delete('/inventory/{id}', [\App\Http\Controllers\Admin\AdminController::class, 'deleteProduct'])->name('inventory.delete');
     Route::post('/inventory/{id}/toggle-availability', [\App\Http\Controllers\Admin\AdminController::class, 'toggleAvailability'])->name('inventory.toggle');

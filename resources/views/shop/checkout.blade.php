@@ -23,7 +23,7 @@
             <p class="text-base text-zinc-600 mt-2">Review your order and enter your details</p>
         </div>
 
-        <form method="POST" action="{{ route('checkout.submit') }}" class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        <form method="POST" action="{{ route('checkout.submit') }}" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
     @csrf
     <input type="hidden" name="_token" value="{{ csrf_token() }}">
             <!-- Checkout Form -->
@@ -120,7 +120,7 @@
                         </h3>
                         <div class="space-y-3">
                             <label class="flex items-center gap-3 p-4 border border-zinc-200 rounded-md cursor-pointer hover:bg-zinc-50">
-                                <input type="radio" name="payment_method" value="toyyibpay" class="text-zinc-600" required>
+                                <input type="radio" name="payment_method" value="toyyibpay" class="text-zinc-600" required onchange="toggleBankInfo(false)">
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="wallet" class="w-5 h-5"></i>
                                     <span class="font-medium">ToyyibPay (Online Payment)</span>
@@ -128,12 +128,45 @@
                                 </div>
                             </label>
                             <label class="flex items-center gap-3 p-4 border border-zinc-200 rounded-md cursor-pointer hover:bg-zinc-50">
-                                <input type="radio" name="payment_method" value="bank_transfer" class="text-zinc-600">
+                                <input type="radio" name="payment_method" value="bank_transfer" class="text-zinc-600" onchange="toggleBankInfo(true)">
                                 <div class="flex items-center gap-2">
                                     <i data-lucide="building-2" class="w-5 h-5"></i>
                                     <span class="font-medium">Bank Transfer</span>
                                 </div>
                             </label>
+                        </div>
+
+                        <!-- Bank Transfer Information -->
+                        <div id="bankInfo" class="hidden mt-4 p-5 bg-blue-50 border border-blue-200 rounded-md">
+                            <h4 class="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4"></i>
+                                Bank Transfer Details
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-blue-700">Bank Name:</span>
+                                    <span class="text-blue-900">Maybank</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-blue-700">Account Name:</span>
+                                    <span class="text-blue-900">D4ily Thrift Shop</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-blue-700">Account Number:</span>
+                                    <span class="text-blue-900 font-mono">1234567890123</span>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <label class="block text-sm font-medium text-blue-900 mb-2">
+                                    <i data-lucide="upload" class="w-4 h-4 inline mr-1"></i>
+                                    Upload Payment Receipt
+                                </label>
+                                <input type="file" name="payment_proof"
+                                    accept="image/*,.pdf"
+                                    class="w-full px-3 py-2 text-sm border border-blue-300 rounded-md bg-white focus:outline-none focus:border-blue-500 focus:ring-0">
+                                <p class="text-xs text-blue-700 mt-1">Please upload your payment receipt or screenshot (Image or PDF)</p>
+                            </div>
                         </div>
                     </div>
 
@@ -222,6 +255,21 @@
     <script>
         lucide.createIcons();
 
+        // Toggle bank information display
+        function toggleBankInfo(show) {
+            const bankInfo = document.getElementById('bankInfo');
+            const paymentProofInput = document.querySelector('input[name="payment_proof"]');
+
+            if (show) {
+                bankInfo.classList.remove('hidden');
+                paymentProofInput.required = true;
+            } else {
+                bankInfo.classList.add('hidden');
+                paymentProofInput.required = false;
+                paymentProofInput.value = '';
+            }
+        }
+
         // Update cart count on page load
         async function updateCartCount() {
             try {
@@ -252,6 +300,17 @@
         // Handle form submission for ToyyibPay
         document.querySelector('form').addEventListener('submit', async function(e) {
             const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
+
+            // Validate bank transfer proof if selected
+            if (selectedPaymentMethod && selectedPaymentMethod.value === 'bank_transfer') {
+                const paymentProofInput = document.querySelector('input[name="payment_proof"]');
+                if (!paymentProofInput.files || paymentProofInput.files.length === 0) {
+                    e.preventDefault();
+                    alert('Please upload your payment receipt to proceed with bank transfer.');
+                    return false;
+                }
+            }
+
             if (selectedPaymentMethod && selectedPaymentMethod.value === 'toyyibpay') {
                 e.preventDefault();
                 const submitText = document.getElementById('submit-text');

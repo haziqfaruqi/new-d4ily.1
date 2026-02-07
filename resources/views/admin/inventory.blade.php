@@ -20,20 +20,209 @@
 
         <!-- Main Content -->
         <main class="flex-1 overflow-auto">
-            <header class="h-16 bg-white border-b border-zinc-200 flex items-center justify-between px-8">
-                <h1 class="text-base font-medium text-zinc-900">Inventory Management</h1>
-                <button onclick="openAddModal()" class="px-4 py-2 text-sm font-medium bg-zinc-900 text-white rounded-md hover:bg-zinc-800 flex items-center gap-2">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    Add Product
-                </button>
+            <header class="relative overflow-hidden px-8 py-8" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 50%, #c53131 100%);">
+                <!-- Decorative Elements -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
+
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between">
+                        <div class="max-w-2xl">
+                            <div class="flex items-center gap-3 mb-2">
+                                <div class="px-3 py-1 bg-white/30 backdrop-blur rounded-full">
+                                    <span class="text-xs font-bold text-white">INVENTORY HUB</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                                    <span class="text-xs text-white/80">Stock Levels</span>
+                                </div>
+                            </div>
+                            <h1 class="text-3xl font-bold text-white mb-2">Product Command Center</h1>
+                            <p class="text-sm text-white/80">Manage your thrift shop inventory and track stock levels</p>
+                        </div>
+                        <div class="hidden lg:flex items-center gap-4">
+                            <div class="text-center px-6 py-3 bg-white/20 backdrop-blur rounded-xl">
+                                <p class="text-2xl font-bold text-white">{{ $stats['total_products'] }}</p>
+                                <p class="text-xs text-white/70">Total</p>
+                            </div>
+                            <div class="w-px h-12 bg-white/30"></div>
+                            <div class="text-center px-6 py-3 bg-white/20 backdrop-blur rounded-xl">
+                                <p class="text-2xl font-bold text-white">{{ $stats['available_products'] }}</p>
+                                <p class="text-xs text-white/70">Available</p>
+                            </div>
+                            <div class="w-px h-12 bg-white/30"></div>
+                            <div class="text-center px-6 py-3 bg-white/20 backdrop-blur rounded-xl">
+                                <p class="text-2xl font-bold text-white">{{ $stats['sold_products'] }}</p>
+                                <p class="text-xs text-white/70">Sold</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        <button onclick="openAddModal()" class="px-6 py-3 text-sm font-bold bg-white text-stone-800 rounded-xl hover:bg-white/90 shadow-lg flex items-center gap-2 transition-all">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            Add New Product
+                        </button>
+                    </div>
+                </div>
             </header>
 
             <div class="p-8">
                 @if(session('success'))
-                <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+                <div class="mb-6 p-4 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600"></i>
                     <p class="text-sm text-emerald-800">{{ session('success') }}</p>
                 </div>
                 @endif
+
+                @if(session('error'))
+                <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-5 h-5 text-red-600"></i>
+                    <p class="text-sm text-red-800">{{ session('error') }}</p>
+                </div>
+                @endif
+
+                <!-- Statistics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-lg border border-zinc-200 p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-zinc-600">Total Products</p>
+                                <p class="text-2xl font-bold text-zinc-900 mt-1">{{ $stats['total_products'] }}</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                                <i data-lucide="package" class="w-6 h-6 text-blue-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-zinc-200 p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-zinc-600">Available</p>
+                                <p class="text-2xl font-bold text-emerald-600 mt-1">{{ $stats['available_products'] }}</p>
+                            </div>
+                            <div class="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-emerald-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg border border-zinc-200 p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-zinc-600">Sold</p>
+                                <p class="text-2xl font-bold text-red-600 mt-1">{{ $stats['sold_products'] }}</p>
+                            </div>
+                            <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                                <i data-lucide="x-circle" class="w-6 h-6 text-red-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions & Category Overview -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-lg border border-zinc-200 p-6">
+                        <h3 class="text-base font-semibold text-zinc-900 mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button onclick="openAddModal()" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                Add New Product
+                            </button>
+                            <a href="{{ route('admin.orders') }}" class="block w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-zinc-100 text-zinc-700 rounded-lg hover:bg-zinc-200 transition-colors">
+                                <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                                Manage Orders
+                            </a>
+                            <button onclick="exportInventory()" class="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium bg-zinc-100 text-zinc-700 rounded-lg hover:bg-zinc-200 transition-colors">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                Export Inventory
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Category Overview -->
+                    <div class="lg:col-span-2 bg-white rounded-lg border border-zinc-200 p-6">
+                        <h3 class="text-base font-semibold text-zinc-900 mb-4">Category Overview</h3>
+                        <div class="space-y-3">
+                            @foreach($stats['low_stock_categories'] as $category)
+                            <div class="flex items-center justify-between p-3 bg-zinc-50 rounded-lg hover:bg-zinc-100 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                        <i data-lucide="tag" class="w-5 h-5 text-indigo-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-zinc-900">{{ $category['name'] }}</p>
+                                        <p class="text-xs text-zinc-500">{{ $category['available'] }} available</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-semibold text-zinc-900">{{ $category['count'] }}</p>
+                                    <p class="text-xs text-zinc-500">total</p>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recently Added -->
+                @if(isset($recentProducts) && $recentProducts->count() > 0)
+                <div class="bg-white rounded-lg border border-zinc-200 p-6 mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-semibold text-zinc-900">Recently Added Products</h3>
+                        <span class="text-xs text-zinc-500">Last 5 products</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        @foreach($recentProducts as $product)
+                        <a href="{{ route('shop.product', $product->id) }}" target="_blank" class="group">
+                            <div class="relative aspect-[3/4] overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 mb-2">
+                                <img src="{{ $product->images[0] ?? 'https://via.placeholder.com/300' }}"
+                                     alt="{{ $product->name }}"
+                                     class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                                @if(!$product->is_available)
+                                    <div class="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded bg-red-500 text-white">
+                                        Sold
+                                    </div>
+                                @endif
+                            </div>
+                            <p class="text-xs font-medium text-zinc-900 group-hover:text-indigo-600 transition-colors line-clamp-1">{{ $product->name }}</p>
+                            <p class="text-xs font-semibold text-zinc-900 mt-0.5">RM{{ number_format($product->price, 2) }}</p>
+                        </a>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
+                <!-- Search and Filters -->
+                <div class="bg-white rounded-lg border border-zinc-200 p-4 mb-6">
+                    <div class="flex flex-wrap gap-4 items-center">
+                        <div class="flex-1 min-w-[250px]">
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400"></i>
+                                <input type="text"
+                                       id="searchInput"
+                                       placeholder="Search products..."
+                                       class="w-full pl-10 pr-4 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:border-transparent"
+                                       onkeyup="filterTable()">
+                            </div>
+                        </div>
+                        <select id="categoryFilter" onchange="filterTable()" class="px-4 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                        <select id="statusFilter" onchange="filterTable()" class="px-4 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                            <option value="">All Status</option>
+                            <option value="available">Available</option>
+                            <option value="sold">Sold</option>
+                        </select>
+                        <button onclick="clearFilters()" class="px-4 py-2 text-sm border border-zinc-300 rounded-md hover:bg-zinc-50 transition-colors">
+                            Clear Filters
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Products Table -->
                 <div class="bg-white rounded-lg border border-zinc-200">
@@ -41,19 +230,18 @@
                         <table class="w-full text-sm">
                             <thead class="bg-zinc-50 text-zinc-500">
                                 <tr>
-                                    <th class="px-5 py-3 text-left font-medium">Product</th>
-                                    <th class="px-5 py-3 text-left font-medium">Category</th>
-                                    <th class="px-5 py-3 text-left font-medium">Price</th>
-                                    <th class="px-5 py-3 text-left font-medium">Stock</th>
-                                    <th class="px-5 py-3 text-left font-medium">Condition</th>
-                                    <th class="px-5 py-3 text-left font-medium">Status</th>
-                                    <th class="px-5 py-3 text-right font-medium">Actions</th>
+                                    <th class="px-4 py-3 text-left font-medium">Product</th>
+                                    <th class="px-3 py-3 text-left font-medium">Category</th>
+                                    <th class="px-3 py-3 text-left font-medium">Price</th>
+                                    <th class="px-3 py-3 text-left font-medium">Condition</th>
+                                    <th class="px-3 py-3 text-left font-medium">Status</th>
+                                    <th class="px-2 py-3 text-center font-medium">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-zinc-100">
                                 @forelse($products as $product)
                                 <tr class="hover:bg-zinc-50 {{ !$product->is_available ? 'bg-red-50/50' : '' }}">
-                                    <td class="px-5 py-3">
+                                    <td class="px-4 py-3">
                                         <div class="flex items-center gap-3">
                                             <img src="{{ $product->images[0] ?? 'https://via.placeholder.com/40' }}" class="w-12 h-12 rounded object-cover {{ !$product->is_available ? 'opacity-50' : '' }}">
                                             <div>
@@ -62,61 +250,46 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-5 py-3 text-zinc-700">{{ $product->category->name }}</td>
-                                    <td class="px-5 py-3 font-medium text-zinc-900">RM{{ number_format($product->price, 2) }}</td>
-                                    <td class="px-5 py-3">
-                                        <span class="px-2 py-1 rounded text-xs font-medium {{ $product->stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700' }}">
-                                            {{ $product->stock }} units
-                                        </span>
-                                    </td>
-                                    <td class="px-5 py-3 text-zinc-700 capitalize">{{ $product->condition }}</td>
-                                    <td class="px-5 py-3">
+                                    <td class="px-3 py-3 text-zinc-700" data-category-id="{{ $product->category_id }}">{{ $product->category->name }}</td>
+                                    <td class="px-3 py-3 font-medium text-zinc-900">RM{{ number_format($product->price, 2) }}</td>
+                                    <td class="px-3 py-3 text-zinc-700 capitalize text-xs">{{ $product->condition }}</td>
+                                    <td class="px-3 py-3">
                                         @if($product->is_available)
                                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700">
                                                 <i data-lucide="check-circle" class="w-3 h-3"></i>
-                                                Available
                                             </span>
                                         @else
                                             <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-50 text-red-700">
                                                 <i data-lucide="x-circle" class="w-3 h-3"></i>
-                                                Sold
                                             </span>
                                         @endif
                                     </td>
-                                    <td class="px-5 py-3 text-right">
-                                        <button onclick="toggleAvailability({{ $product->id }}, {{ $product->is_available ? 'false' : 'true' }})" class="text-zinc-600 hover:text-zinc-900 mr-2" title="{{ $product->is_available ? 'Mark as Sold' : 'Mark as Available' }}">
-                                            @if($product->is_available)
-                                                <i data-lucide="package" class="w-4 h-4"></i>
-                                            @else
-                                                <i data-lucide="package-open" class="w-4 h-4"></i>
-                                            @endif
-                                        </button>
-                                        <button onclick='editProduct({
-                    id: {{ $product->id }},
-                    name: "{{ $product->name }}",
-                    brand: "{{ $product->brand }}",
-                    description: "{{ $product->description }}",
-                    category_id: {{ $product->category_id }},
-                    price: {{ $product->price }},
-                    condition: "{{ $product->condition }}",
-                    size: "{{ $product->size }}",
-                    color: "{{ $product->color }}",
-                    images: {{ json_encode($product->images) }}
-                })' class="text-zinc-600 hover:text-zinc-900 mr-2">
-                                            <i data-lucide="edit" class="w-4 h-4"></i>
-                                        </button>
-                                        <form action="{{ route('admin.inventory.delete', $product->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this product?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-700">
-                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    <td class="px-2 py-3">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button onclick="toggleAvailability({{ $product->id }}, {{ $product->is_available ? 'false' : 'true' }})" class="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded" title="{{ $product->is_available ? 'Mark as Sold' : 'Mark as Available' }}">
+                                                @if($product->is_available)
+                                                    <i data-lucide="package" class="w-3.5 h-3.5"></i>
+                                                @else
+                                                    <i data-lucide="package-open" class="w-3.5 h-3.5"></i>
+                                                @endif
                                             </button>
-                                        </form>
+                                            <button onclick="editProduct({{ $product->id }})" class="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded" title="Edit">
+                                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                            </button>
+                                            <form action="{{ route('admin.inventory.delete', $product->id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this product?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <input type="hidden" name="page" value="{{ request('page', 1) }}">
+                                                <button type="submit" class="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded" title="Delete">
+                                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="7" class="px-5 py-8 text-center text-zinc-500">No products found</td>
+                                    <td colspan="6" class="px-5 py-8 text-center text-zinc-500">No products found</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -139,6 +312,7 @@
             <form id="productForm" method="POST" enctype="multipart/form-data" onsubmit="return validateFormAndSubmit()" class="p-6 space-y-4">
                 @csrf
                 <input type="hidden" id="productId" name="_method" value="">
+                <input type="hidden" id="currentPage" name="page" value="">
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -190,6 +364,8 @@
                             <option value="XL">XL</option>
                             <option value="XXL">XXL</option>
                             <option value="XXXL">XXXL</option>
+                            <option value="One Size">One Size</option>
+                            <option value="Adjustable">Adjustable</option>
                         </select>
                     </div>
                     <div>
@@ -394,58 +570,79 @@
             document.getElementById('productModal').classList.remove('hidden');
         }
 
-        function editProduct(product) {
-            console.log('=== EDITING PRODUCT ===');
-            console.log('Product ID:', product.id);
-            console.log('Product Name:', product.name);
-            console.log('Product Size:', product.size);
-            console.log('Product Data:', product);
+        function editProduct(productId) {
+            console.log('=== EDITING PRODUCT ID:', productId, '===');
 
-            document.getElementById('modalTitle').textContent = 'Edit Product';
-            document.getElementById('productForm').action = `/admin/inventory/${product.id}`;
-            document.getElementById('productId').name = '_method';
-            document.getElementById('productId').value = 'PUT';
+            // Fetch product data from server
+            fetch(`/admin/inventory/${productId}/edit`)
+                .then(response => response.json())
+                .then(product => {
+                    console.log('Product data received:', product);
 
-            const form = document.getElementById('productForm');
-            form.querySelector('[name="name"]').value = product.name;
-            form.querySelector('[name="brand"]').value = product.brand;
-            form.querySelector('[name="description"]').value = product.description;
-            form.querySelector('[name="category_id"]').value = product.category_id;
-            form.querySelector('[name="price"]').value = product.price;
-            form.querySelector('[name="condition"]').value = product.condition;
+                    // Get current page from URL
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const currentPage = urlParams.get('page') || '1';
 
-            // Set size dropdown value
-            console.log('Setting size to:', product.size);
-            const sizeSelect = document.getElementById('sizeSelect');
-            console.log('Size select element:', sizeSelect);
-            if (sizeSelect) {
-                sizeSelect.value = product.size;
-                console.log('Size select value set to:', sizeSelect.value);
-                console.log('Available options:', Array.from(sizeSelect.options).map(opt => opt.value));
-            } else {
-                console.error('Size select element not found!');
-            }
+                    document.getElementById('modalTitle').textContent = 'Edit Product';
+                    document.getElementById('productForm').action = `/admin/inventory/${product.id}`;
+                    document.getElementById('productId').name = '_method';
+                    document.getElementById('productId').value = 'PUT';
+                    document.getElementById('currentPage').value = currentPage;
 
-            form.querySelector('[name="color"]').value = product.color;
+                    const form = document.getElementById('productForm');
+                    form.querySelector('[name="name"]').value = product.name;
+                    form.querySelector('[name="brand"]').value = product.brand;
+                    form.querySelector('[name="description"]').value = product.description;
+                    form.querySelector('[name="category_id"]').value = product.category_id;
+                    form.querySelector('[name="price"]').value = product.price;
+                    form.querySelector('[name="condition"]').value = product.condition;
+                    form.querySelector('[name="color"]').value = product.color;
 
-            // Show existing images
-            showExistingImages(product.images || []);
-            document.getElementById('existingImages').value = JSON.stringify(product.images || []);
+                    // Set size dropdown value
+                    const sizeSelect = document.getElementById('sizeSelect');
+                    if (sizeSelect) {
+                        // Try to set the value, if it doesn't exist in options, add it
+                        let sizeExists = false;
+                        for (let i = 0; i < sizeSelect.options.length; i++) {
+                            if (sizeSelect.options[i].value === product.size) {
+                                sizeSelect.selectedIndex = i;
+                                sizeExists = true;
+                                break;
+                            }
+                        }
+                        // If size doesn't exist in dropdown, add it as an option
+                        if (!sizeExists && product.size) {
+                            const option = document.createElement('option');
+                            option.value = product.size;
+                            option.textContent = product.size;
+                            option.selected = true;
+                            sizeSelect.appendChild(option);
+                        }
+                    }
 
-            // Reset file inputs
-            const container = document.getElementById('imageInputs');
-            container.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <input type="file" name="images[]" accept="image/*" onchange="previewImages(this)" class="flex-1 px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
-                    <button type="button" onclick="addImageInput()" class="px-3 py-2 text-sm bg-zinc-100 text-zinc-700 rounded-md hover:bg-zinc-200 flex items-center gap-1">
-                        <i data-lucide="plus" class="w-4 h-4"></i>
-                        Add More
-                    </button>
-                </div>
-            `;
-            lucide.createIcons();
-            document.getElementById('productModal').classList.remove('hidden');
-            console.log('Modal opened with form data');
+                    // Show existing images
+                    showExistingImages(product.images || []);
+                    document.getElementById('existingImages').value = JSON.stringify(product.images || []);
+
+                    // Reset file inputs
+                    const container = document.getElementById('imageInputs');
+                    container.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <input type="file" name="images[]" accept="image/*" onchange="previewImages(this)" class="flex-1 px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                            <button type="button" onclick="addImageInput()" class="px-3 py-2 text-sm bg-zinc-100 text-zinc-700 rounded-md hover:bg-zinc-200 flex items-center gap-1">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                Add More
+                            </button>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                    document.getElementById('productModal').classList.remove('hidden');
+                    console.log('Modal opened with form data');
+                })
+                .catch(error => {
+                    console.error('Error fetching product data:', error);
+                    alert('Failed to load product data. Please try again.');
+                });
         }
 
         function validateForm() {
@@ -502,7 +699,10 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    // Reload the page, preserving the current page number
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const currentPage = urlParams.get('page') || '1';
+                    window.location.href = `/admin/inventory?page=${currentPage}`;
                 } else {
                     alert('Error: ' + (data.message || 'Failed to update product status'));
                 }
@@ -511,6 +711,44 @@
                 console.error('Error:', error);
                 alert('An error occurred while updating the product status');
             });
+        }
+
+        function filterTable() {
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
+            const categoryValue = document.getElementById('categoryFilter').value;
+            const statusValue = document.getElementById('statusFilter').value;
+
+            const table = document.querySelector('tbody');
+            const rows = table.getElementsByTagName('tr');
+
+            for (let row of rows) {
+                const nameCell = row.cells[0].textContent.toLowerCase();
+                const categoryCell = row.cells[1];
+                const statusCell = row.cells[4];
+
+                let matchesSearch = nameCell.includes(searchValue);
+                let matchesCategory = !categoryValue || categoryCell.dataset.categoryId === categoryValue;
+                let matchesStatus = true;
+
+                if (statusValue === 'available') {
+                    matchesStatus = statusCell.querySelector('.bg-emerald-50') !== null;
+                } else if (statusValue === 'sold') {
+                    matchesStatus = statusCell.querySelector('.bg-red-50') !== null;
+                }
+
+                row.style.display = (matchesSearch && matchesCategory && matchesStatus) ? '' : 'none';
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            filterTable();
+        }
+
+        function exportInventory() {
+            alert('Export functionality coming soon! This will export all products to CSV.');
         }
     </script>
 </body>

@@ -24,10 +24,10 @@
     <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2"></div>
 
     <!-- Product Content -->
-    <main class="mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
+    <main class="mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 max-w-7xl">
         <!-- Breadcrumbs -->
         <div class="flex items-center gap-2 text-xs text-zinc-500 mb-8">
-            <a href="{{ route('shop.index') }}" class="hover:text-zinc-900">Home</a>
+            <a href="{{ route('shop.index') }}" class="hover:text-zinc-900">Shop</a>
             <i data-lucide="chevron-right" class="w-3 h-3"></i>
             <a href="{{ route('shop.index', ['category' => $product->category_id]) }}"
                 class="hover:text-zinc-900">{{ $product->category->name }}</a>
@@ -40,14 +40,20 @@
             <div class="lg:col-span-7 flex flex-col justify-center h-full">
                 <!-- Main Image -->
                 <div class="max-w-lg mx-auto w-full">
-                    <div class="relative aspect-square w-full overflow-hidden rounded-lg border group border-zinc-200 bg-zinc-100">
+                    <div class="relative aspect-square w-full overflow-hidden rounded-2xl border-2 group border-zinc-200 bg-zinc-100 shadow-lg">
                         <img id="main-image" src="{{ $product->images[0] ?? 'https://via.placeholder.com/600' }}"
                             alt="{{ $product->name }}"
                             class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105">
                         @if($product->stock == 1)
                             <div
-                                class="absolute bottom-4 left-4 inline-flex items-center rounded-full backdrop-blur px-3 py-1 text-xs font-medium shadow-sm border bg-white/90 text-zinc-800 border-zinc-200">
+                                class="absolute bottom-4 left-4 inline-flex items-center rounded-full backdrop-blur px-4 py-2 text-sm font-bold shadow-md border-2 bg-white/90 text-zinc-800 border-zinc-200">
+                                <i data-lucide="alert-circle" class="w-4 h-4 mr-1.5" style="color: #c53131;"></i>
                                 Only 1 available
+                            </div>
+                        @endif
+                        @if($product->featured)
+                            <div class="absolute top-4 left-4 px-3 py-1.5 text-sm font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%); color: white;">
+                                ⭐ Featured
                             </div>
                         @endif
                     </div>
@@ -89,99 +95,225 @@
 
             <!-- Right: Details -->
             <div class="lg:col-span-5 flex flex-col h-full">
-                <div class="flex items-start justify-between">
+                <!-- Brand Badge -->
+                <div class="mb-3">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-700">
+                        {{ $product->brand }}
+                    </span>
+                </div>
+
+                <div class="flex items-start justify-between mb-4">
                     <div>
-                        <h1 class="text-2xl font-semibold tracking-tight text-zinc-900">{{ $product->name }}</h1>
-                        <p class="mt-1 text-sm text-zinc-500">{{ $product->brand }} · {{ $product->category->name }}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-2xl font-bold tracking-tight text-zinc-900">
-                            RM{{ number_format($product->price, 2) }}</p>
+                        <h1 class="text-3xl font-bold tracking-tight text-zinc-900">{{ $product->name }}</h1>
+                        <p class="mt-2 text-sm text-zinc-600 flex items-center gap-1">
+                            <i data-lucide="tag" class="w-4 h-4"></i>
+                            {{ $product->category->name }}
+                        </p>
                     </div>
                 </div>
 
-                <div class="mt-6 space-y-4 border-t py-6 border-zinc-100">
-                    <div class="grid grid-cols-2 gap-4">
+                <!-- Price Card -->
+                <div class="relative overflow-hidden rounded-2xl p-6 mb-6 shadow-lg" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 100%);">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+                    <div class="relative z-10 flex items-center justify-between">
                         <div>
-                            <span class="block text-xs text-zinc-500">Condition</span>
-                            <span
-                                class="block text-sm font-medium text-zinc-900 capitalize">{{ $product->condition }}</span>
+                            <p class="text-xs font-semibold text-stone-700 mb-1">Price</p>
+                            <p class="text-4xl font-extrabold text-stone-800">
+                                RM{{ number_format($product->price, 2) }}
+                            </p>
                         </div>
-                        <div>
-                            <span class="block text-xs text-zinc-500">Size</span>
-                            <span class="block text-sm font-medium text-zinc-900">{{ $product->size }}</span>
+                        <div class="w-12 h-12 bg-white/30 backdrop-blur rounded-xl flex items-center justify-center">
+                            <i data-lucide="banknote" class="w-6 h-6 text-stone-800"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Details -->
+                <div class="space-y-4 border-t border-b border-zinc-100 py-6 mb-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-3 bg-zinc-50 rounded-xl">
+                            <span class="block text-xs text-zinc-500 mb-1 flex items-center gap-1">
+                                <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                Condition
+                            </span>
+                            <span class="block text-sm font-bold text-zinc-900 capitalize">{{ $product->condition }}</span>
+                        </div>
+                        <div class="p-3 bg-zinc-50 rounded-xl">
+                            <span class="block text-xs text-zinc-500 mb-1 flex items-center gap-1">
+                                <i data-lucide="ruler" class="w-3 h-3"></i>
+                                Size
+                            </span>
+                            <span class="block text-sm font-bold text-zinc-900">{{ $product->size }}</span>
                         </div>
                         @if($product->material)
-                            <div>
-                                <span class="block text-xs text-zinc-500">Material</span>
-                                <span class="block text-sm font-medium text-zinc-900">{{ $product->material }}</span>
+                            <div class="p-3 bg-zinc-50 rounded-xl">
+                                <span class="block text-xs text-zinc-500 mb-1 flex items-center gap-1">
+                                    <i data-lucide="layers" class="w-3 h-3"></i>
+                                    Material
+                                </span>
+                                <span class="block text-sm font-bold text-zinc-900">{{ $product->material }}</span>
                             </div>
                         @endif
-                        <div>
-                            <span class="block text-xs text-zinc-500">Stock</span>
-                            <span class="block text-sm font-medium text-zinc-900">{{ $product->stock }} available</span>
+                        <div class="p-3 bg-zinc-50 rounded-xl">
+                            <span class="block text-xs text-zinc-500 mb-1 flex items-center gap-1">
+                                <i data-lucide="package" class="w-3 h-3"></i>
+                                Availability
+                            </span>
+                            @if($product->stock > 0)
+                                <span class="block text-sm font-bold text-emerald-700">
+                                    {{ $product->stock }} available
+                                </span>
+                            @else
+                                <span class="block text-sm font-bold text-red-700">
+                                    Sold out
+                                </span>
+                            @endif
                         </div>
                     </div>
 
-                    <div>
-                        <span class="block text-xs text-zinc-500 mb-2">Description</span>
-                        <p class="text-sm text-zinc-700 leading-relaxed">{{ $product->description }}</p>
-                    </div>
+                    @if($product->description)
+                        <div class="bg-zinc-50 rounded-xl p-4">
+                            <span class="block text-xs text-zinc-500 mb-2 flex items-center gap-1">
+                                <i data-lucide="file-text" class="w-3 h-3"></i>
+                                Description
+                            </span>
+                            <p class="text-sm text-zinc-700 leading-relaxed">{{ $product->description }}</p>
+                        </div>
+                    @endif
                 </div>
 
-                <div class="mt-auto pt-8 space-y-3">
+                <div class="mt-auto pt-4 space-y-3">
                     <div class="flex gap-3">
                         <button id="add-to-cart-btn" onclick="addToCart()"
-                            class="flex-1 transition-colors flex hover:bg-zinc-800 text-sm font-medium text-white bg-zinc-900 h-11 rounded-md shadow-sm gap-x-2 gap-y-2 items-center justify-center">
-                            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                            class="flex-1 transition-all flex hover:bg-stone-800 text-sm font-bold text-white bg-stone-900 h-12 rounded-xl shadow-lg hover:shadow-xl gap-x-2 gap-y-2 items-center justify-center">
+                            <i data-lucide="shopping-cart" class="w-5 h-5"></i>
                             Add to Cart
                         </button>
                         <button id="wishlist-btn" onclick="toggleWishlist()"
-                            class="h-11 w-11 flex items-center justify-center rounded-md border {{ $isWishlisted ? 'text-red-500 border-red-200 bg-red-50' : 'text-zinc-500 hover:text-red-500 border-zinc-200 hover:bg-zinc-50' }} transition-colors">
+                            class="h-12 w-12 flex items-center justify-center rounded-xl border-2 {{ $isWishlisted ? 'text-red-500 border-red-200 bg-red-50' : 'text-zinc-500 hover:text-red-500 border-zinc-200 hover:bg-zinc-50' }} transition-all hover:shadow-lg">
                             <i data-lucide="heart" class="w-5 h-5" {{ $isWishlisted ? 'fill="currentColor"' : '' }}></i>
                         </button>
                     </div>
 
-                    @if(isset($similarProducts) && $similarProducts->count() > 0)
-                        <button id="find-similar-btn" onclick="toggleSimilarItems()"
-                            class="w-full transition-colors flex hover:bg-indigo-600 text-sm font-medium text-white bg-indigo-500 h-11 rounded-md shadow-sm gap-x-2 gap-y-2 items-center justify-center">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            <span id="similar-btn-text">Find Similar Items</span>
-                            <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="similar-btn-icon"></i>
-                        </button>
-                    @endif
+                    <!-- Find Similar Item Button -->
+                    <button id="find-similar-btn" onclick="toggleSimilarItems()"
+                        class="w-full transition-all flex items-center justify-center gap-2 text-sm font-bold text-white h-12 rounded-xl shadow-lg hover:shadow-xl" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%);">
+                        <i data-lucide="sparkles" class="w-5 h-5"></i>
+                        <span id="similar-btn-text">Find Similar Items</span>
+                    </button>
                 </div>
         </div>
     </main>
 
-    <!-- Similar Items Results Section - Enhanced -->
-    @if(isset($similarProducts) && $similarProducts->count() > 0)
-        <section id="similar-items-section" class="hidden transition-all duration-500 bg-zinc-50">
-            <div class="border-t border-zinc-200"></div>
+    <!-- More from This Brand Section -->
+    @if(isset($sameBrandProducts) && $sameBrandProducts->count() > 0)
+        <section id="similar-items-section" class="mt-12 hidden">
+            <div class="border-t-2 border-zinc-200"></div>
             <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
                 <div class="max-w-7xl mx-auto">
-                    <div class="flex items-center justify-between mb-8">
-                        <h2 class="text-2xl font-bold text-zinc-900">Similar Items</h2>
-                        <button onclick="toggleSimilarItems()"
-                                class="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors hidden">
-                        </button>
+                    <!-- Section Header -->
+                    <div class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 100%);">
+                                <i data-lucide="award" class="w-5 h-5 text-stone-800"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-zinc-900">More from {{ $product->brand }}</h2>
+                        </div>
+                        <p class="text-sm text-zinc-600 ml-13">Explore more items from this brand</p>
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        @foreach($similarProducts as $similarProduct)
-                            <a href="{{ route('shop.product', $similarProduct->id) }}" class="group transition-all duration-500 transform hover:-translate-y-1">
-                                <div class="relative aspect-[3/4] overflow-hidden rounded-lg border border-zinc-200 bg-white mb-4 shadow-sm hover:shadow-md transition-all duration-500">
-                                    <img src="{{ $similarProduct->images[0] ?? 'https://via.placeholder.com/300' }}"
-                                        alt="{{ $similarProduct->name }}"
-                                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
-                                    @if($similarProduct->featured)
-                                        <div class="absolute top-2 left-2 px-2 py-1 text-xs font-medium rounded bg-indigo-600 text-white">Featured</div>
+                        @foreach($sameBrandProducts as $brandProduct)
+                            @php
+                                // Calculate similarity percentage
+                                // Same brand + same category = 100% match
+                                // Same brand only = 60-80% based on condition/price match
+                                if ($brandProduct->category_id === $product->category_id) {
+                                    $similarityScore = 100;
+                                } else {
+                                    // Score ranges from 0-30 (condition + price match)
+                                    // Map to 60-80% range
+                                    $similarityScore = 60 + min(20, ($brandProduct->priority_score ?? 0) / 30 * 20);
+                                }
+                            @endphp
+                            <a href="{{ route('shop.product', $brandProduct->id) }}" class="group transition-all duration-500 transform hover:-translate-y-2">
+                                <div class="relative aspect-[3/4] overflow-hidden rounded-2xl border-2 border-zinc-200 bg-white mb-4 shadow-md hover:shadow-xl transition-all duration-500">
+                                    <img src="{{ $brandProduct->images[0] ?? 'https://via.placeholder.com/300' }}"
+                                        alt="{{ $brandProduct->name }}"
+                                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+
+                                    <!-- Similarity Badge -->
+                                    <div class="absolute top-3 left-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%); color: white;">
+                                        {{ round($similarityScore) }}% Match
+                                    </div>
+
+                                    @if($brandProduct->category_id === $product->category_id)
+                                        <div class="absolute top-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 100%); color: white;">
+                                            ✓ Same Category
+                                        </div>
                                     @endif
-                                    <div class="absolute bottom-2 right-2 px-2 py-1 text-xs font-medium rounded backdrop-blur bg-white/90 text-zinc-900 border border-zinc-200">{{ ucfirst($similarProduct->condition) }}</div>
+
+                                    @if($brandProduct->featured)
+                                        <div class="absolute bottom-14 right-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+                                            ⭐ Featured
+                                        </div>
+                                    @endif
+
+                                    <div class="absolute bottom-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg backdrop-blur bg-white/95 text-stone-800 border-2 border-white shadow-sm">
+                                        {{ ucfirst($brandProduct->condition) }}
+                                    </div>
                                 </div>
-                                <h3 class="text-sm font-medium text-zinc-900 group-hover:text-indigo-600 transition-colors line-clamp-2 mb-1">{{ $similarProduct->name }}</h3>
-                                <p class="text-xs text-zinc-500 mb-2">{{ $similarProduct->brand }}</p>
-                                <p class="text-sm font-semibold text-zinc-900">RM{{ number_format($similarProduct->price, 2) }}</p>
+                                <h3 class="text-sm font-bold text-zinc-900 group-hover:text-[#c53131] transition-colors line-clamp-2 mb-1">{{ $brandProduct->name }}</h3>
+                                <p class="text-xs text-zinc-600 mb-1 font-medium">{{ $brandProduct->brand }}</p>
+                                <p class="text-xs text-zinc-500 mb-2">{{ $brandProduct->category->name }}</p>
+                                <p class="text-base font-bold text-zinc-900">RM{{ number_format($brandProduct->price, 2) }}</p>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
+
+    <!-- More from This Category Section -->
+    @if(isset($sameCategoryProducts) && $sameCategoryProducts->count() > 0)
+        <section id="similar-category-section" class="mt-12 hidden">
+            <div class="border-t-2 border-zinc-200"></div>
+            <div class="mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Section Header -->
+                    <div class="mb-8">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 100%);">
+                                <i data-lucide="layout-grid" class="w-5 h-5 text-stone-800"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-zinc-900">More {{ $product->category->name }}</h2>
+                        </div>
+                        <p class="text-sm text-zinc-600 ml-13">Explore more items from this category</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        @foreach($sameCategoryProducts as $categoryProduct)
+                            <a href="{{ route('shop.product', $categoryProduct->id) }}" class="group transition-all duration-500 transform hover:-translate-y-2">
+                                <div class="relative aspect-[3/4] overflow-hidden rounded-2xl border-2 border-zinc-200 bg-white mb-4 shadow-md hover:shadow-xl transition-all duration-500">
+                                    <img src="{{ $categoryProduct->images[0] ?? 'https://via.placeholder.com/300' }}"
+                                        alt="{{ $categoryProduct->name }}"
+                                        class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
+
+                                    @if($categoryProduct->featured)
+                                        <div class="absolute top-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%); color: white;">
+                                            ⭐ Featured
+                                        </div>
+                                    @endif
+
+                                    <div class="absolute bottom-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg backdrop-blur bg-white/95 text-stone-800 border-2 border-white shadow-sm">
+                                        {{ ucfirst($categoryProduct->condition) }}
+                                    </div>
+                                </div>
+                                <h3 class="text-sm font-bold text-zinc-900 group-hover:text-[#c53131] transition-colors line-clamp-2 mb-1">{{ $categoryProduct->name }}</h3>
+                                <p class="text-xs text-zinc-600 mb-1 font-medium">{{ $categoryProduct->brand }}</p>
+                                <p class="text-xs text-zinc-500 mb-2">{{ $categoryProduct->category->name }}</p>
+                                <p class="text-base font-bold text-zinc-900">RM{{ number_format($categoryProduct->price, 2) }}</p>
                             </a>
                         @endforeach
                     </div>
@@ -242,6 +374,27 @@
             }
         }
 
+        // Toggle similar items visibility
+        function toggleSimilarItems() {
+            const brandSection = document.getElementById('similar-items-section');
+            const categorySection = document.getElementById('similar-category-section');
+            const btnText = document.getElementById('similar-btn-text');
+
+            if (brandSection && categorySection) {
+                const isHidden = brandSection.classList.contains('hidden');
+
+                if (isHidden) {
+                    brandSection.classList.remove('hidden');
+                    categorySection.classList.remove('hidden');
+                    btnText.textContent = 'Hide Similar Items';
+                } else {
+                    brandSection.classList.add('hidden');
+                    categorySection.classList.add('hidden');
+                    btnText.textContent = 'Find Similar Items';
+                }
+            }
+        }
+
         // Update cart count on page load
         updateCartCount();
 
@@ -249,26 +402,6 @@
         document.addEventListener('cartUpdated', updateCartCount);
 
         const productId = {{ $product->id }};
-
-        function toggleSimilarItems() {
-            const section = document.getElementById('similar-items-section');
-            const btnText = document.getElementById('similar-btn-text');
-            const btnIcon = document.getElementById('similar-btn-icon');
-            const hideButton = document.querySelector('#similar-items-section button');
-
-            if (section.classList.contains('hidden')) {
-                section.classList.remove('hidden');
-                btnText.textContent = 'Hide Similar Items';
-                btnIcon.style.transform = 'rotate(180deg)';
-                hideButton.classList.remove('hidden');
-                section.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                section.classList.add('hidden');
-                btnText.textContent = 'Find Similar Items';
-                btnIcon.style.transform = 'rotate(0deg)';
-                hideButton.classList.add('hidden');
-            }
-        }
 
         async function addToCart() {
             const btn = document.getElementById('add-to-cart-btn');

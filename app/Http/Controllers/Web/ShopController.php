@@ -15,17 +15,6 @@ class ShopController extends Controller
     {
         $query = Product::with('category')->available()->where('stock', '>', 0);
 
-        // Track user's search for personalization
-        if ($request->filled('search') && auth()->check()) {
-            Interaction::create([
-                'user_id' => auth()->id(),
-                'product_id' => null,
-                'type' => 'search',
-                'session_id' => session()->getId(),
-                'search_query' => $request->input('search'),
-            ]);
-        }
-
         // Filter by category
         if ($request->has('category') && $request->category) {
             $query->where('category_id', $request->category);
@@ -54,14 +43,25 @@ class ShopController extends Controller
             });
         }
 
-        // Content-based filtering: if logged in and no active filters, boost personalized products
-        $personalizedProductIds = [];
+        // Get recommended products based on viewed/clicked items (for logged-in users)
+        $recommendedProducts = collect();
         if (auth()->check() && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price'])) {
-            $personalizedProductIds = $this->getPersonalizedProductIds(auth()->id());
+            $recommendedProducts = $this->getRecommendedFromViewedProducts(auth()->id(), 8);
+        }
+
+        // Content-based filtering: get personalized products for logged-in users
+        $personalizedProductIds = [];
+        $personalizedProducts = [];
+        $showPersonalizedLabel = false;
+
+        if (auth()->check() && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price'])) {
+            $personalizedProducts = $this->getProductsByAttributeMatching(auth()->id(), 20);
+            $personalizedProductIds = $personalizedProducts->pluck('id')->toArray();
+            $showPersonalizedLabel = !empty($personalizedProductIds);
         }
 
         // Sort
-        $sort = $request->get('sort', 'recommended');
+        $sort = $request->get('sort', 'newest'); // Changed default from 'recommended' to 'newest'
         switch ($sort) {
             case 'price_low':
                 $query->orderBy('price', 'asc');
@@ -73,10 +73,16 @@ class ShopController extends Controller
                 $query->withCount('interactions')->orderBy('interactions_count', 'desc');
                 break;
             case 'newest':
-                $query->orderBy('created_at', 'desc');
+            default:
+                // For newest, boost personalized products to the top, then show by date
+                if (!empty($personalizedProductIds)) {
+                    $query->orderByRaw("FIELD(id, " . implode(',', $personalizedProductIds) . ") DESC")
+                          ->orderBy('created_at', 'desc');
+                } else {
+                    $query->orderBy('created_at', 'desc');
+                }
                 break;
             case 'recommended':
-            default:
                 // Personalized sort - boost products based on user history
                 if (!empty($personalizedProductIds)) {
                     // Order by personalized relevance first, then by created_at
@@ -91,15 +97,31 @@ class ShopController extends Controller
         $products = $query->paginate(10);
         $categories = Category::all();
 
+        // Attach matched attributes to products for display
+        if (!empty($personalizedProducts) && auth()->check()) {
+            $matchedAttributesMap = [];
+            foreach ($personalizedProducts as $p) {
+                if (isset($p->matched_attributes)) {
+                    $matchedAttributesMap[$p->id] = $p->matched_attributes;
+                }
+            }
+
+            // Add matched attributes to paginated products
+            $products->getCollection()->transform(function ($product) use ($matchedAttributesMap) {
+                if (isset($matchedAttributesMap[$product->id])) {
+                    $product->matched_attributes = $matchedAttributesMap[$product->id];
+                }
+                return $product;
+            });
+        }
+
         // Get cart data for navigation
         $cart = null;
         if (auth()->check()) {
             $cart = \App\Models\Cart::with('items.product')->where('user_id', auth()->id())->first();
         }
 
-        $showPersonalizedLabel = auth()->check() && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price']) && !empty($personalizedProductIds);
-
-        return view('shop.index', compact('products', 'categories', 'cart', 'showPersonalizedLabel'));
+        return view('shop.index', compact('products', 'categories', 'cart', 'showPersonalizedLabel', 'personalizedProducts', 'recommendedProducts'));
     }
 
     public function show($id)
@@ -114,8 +136,11 @@ class ShopController extends Controller
             'session_id' => session()->getId(),
         ]);
 
-        // Get similar products
-        $similarProducts = $this->getSimilarProducts($product->id);
+        // Get products from the same brand (prioritized by category match)
+        $sameBrandProducts = $this->getSameBrandProducts($product);
+
+        // Get products from the same category
+        $sameCategoryProducts = $this->getSameCategoryProducts($product);
 
         $isWishlisted = false;
         if (auth()->check()) {
@@ -130,7 +155,7 @@ class ShopController extends Controller
             $cart = \App\Models\Cart::with('items.product')->where('user_id', auth()->id())->first();
         }
 
-        return view('shop.product', compact('product', 'similarProducts', 'isWishlisted', 'cart'));
+        return view('shop.product', compact('product', 'sameBrandProducts', 'sameCategoryProducts', 'isWishlisted', 'cart'));
     }
     public function recommendations(Request $request)
     {
@@ -183,8 +208,93 @@ class ShopController extends Controller
         return view('shop.recommendations', compact('products'));
     }
 
+    /**
+     * Get products from the same brand, prioritized by category match
+     */
+    protected function getSameBrandProducts($product, $limit = 10)
+    {
+        // Get all products from the same brand
+        $brandProducts = Product::with('category')
+            ->available()
+            ->where('brand', $product->brand)
+            ->where('id', '!=', $product->id)
+            ->where('stock', '>', 0)
+            ->get();
+
+        // Prioritize products from the same category
+        $scoredProducts = $brandProducts->map(function ($p) use ($product) {
+            $score = 0;
+
+            // Priority 1: Same category (highest priority)
+            if ($p->category_id === $product->category_id) {
+                $score += 100;
+            }
+
+            // Priority 2: Similar condition
+            if ($p->condition === $product->condition) {
+                $score += 20;
+            }
+
+            // Priority 3: Similar price range (within 30%)
+            $priceDiff = abs($p->price - $product->price) / $product->price;
+            if ($priceDiff < 0.3) {
+                $score += 10;
+            }
+
+            $p->priority_score = $score;
+            return $p;
+        });
+
+        // Sort by priority score and return top results
+        return $scoredProducts
+            ->sortByDesc('priority_score')
+            ->take($limit)
+            ->values();
+    }
+
+    /**
+     * Get products from the same category (excluding current product and same brand products)
+     */
+    protected function getSameCategoryProducts($product, $limit = 10)
+    {
+        $categoryProducts = Product::with('category')
+            ->available()
+            ->where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->where('stock', '>', 0)
+            ->get();
+
+        // Score category products for similarity percentage
+        $scoredProducts = $categoryProducts->map(function ($p) use ($product) {
+            $score = 0;
+
+            // Same category gives a base score
+            $score += 50;
+
+            // Bonus for similar condition
+            if ($p->condition === $product->condition) {
+                $score += 15;
+            }
+
+            // Bonus for similar price range (within 30%)
+            $priceDiff = abs($p->price - $product->price) / $product->price;
+            if ($priceDiff < 0.3) {
+                $score += 10;
+            }
+
+            $p->priority_score = $score;
+            return $p;
+        });
+
+        // Sort by priority score
+        return $scoredProducts
+            ->sortByDesc('priority_score')
+            ->values();
+    }
+
     protected function getSimilarProducts($productId, $limit = 10)
     {
+        // Try content-based recommendations first
         try {
             $aiServiceUrl = env('AI_SERVICE_URL', 'http://localhost:8000');
             $response = Http::timeout(5)->post("{$aiServiceUrl}/recommend/similar-items", [
@@ -204,11 +314,38 @@ class ShopController extends Controller
                 }
             }
         } catch (\Exception $e) {
-            // Fallback to same category
+            // Continue to brand/category fallback
         }
 
-        // Fallback: get products from same category
+        // Fallback 1: Try brand and category-based recommendations
+        try {
+            $aiServiceUrl = env('AI_SERVICE_URL', 'http://localhost:8000');
+            $response = Http::timeout(5)->post("{$aiServiceUrl}/recommend/brand-category", [
+                'product_id' => $productId,
+                'limit' => $limit
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $productIds = $data['product_ids'] ?? [];
+
+                if (!empty($productIds)) {
+                    return Product::with('category')
+                        ->whereIn('id', $productIds)
+                        ->where('stock', '>', 0)
+                        ->get();
+                }
+            }
+        } catch (\Exception $e) {
+            // Continue to same category fallback
+        }
+
+        // Fallback 2: Get products from same category (local database query)
         $product = Product::find($productId);
+        if (!$product) {
+            return collect();
+        }
+
         return Product::with('category')
             ->available()
             ->where('category_id', $product->category_id)
@@ -258,11 +395,11 @@ class ShopController extends Controller
 
     /**
      * Get products based on attribute matching (color, size, brand, category)
-     * Uses weighted scoring from interaction history
+     * Uses weighted scoring from interaction history with emphasis on brand, name, and color
      */
     protected function getProductsByAttributeMatching($userId, $limit = 8)
     {
-        // Get user's interaction history with weights
+        // Get user's interaction history with weights (prioritize purchases and cart additions)
         $interactions = Interaction::where('user_id', $userId)
             ->withWeights()
             ->with('product')
@@ -287,6 +424,7 @@ class ShopController extends Controller
         $colorScores = [];
         $sizeScores = [];
         $conditionScores = [];
+        $nameKeywords = []; // Track keywords from product names
 
         $viewedProductIds = [];
 
@@ -297,29 +435,37 @@ class ShopController extends Controller
             $viewedProductIds[] = $product->id;
             $weight = $interaction->weight;
 
-            // Score categories
+            // Score categories (lower priority)
             if ($product->category_id) {
                 $categoryScores[$product->category_id] = ($categoryScores[$product->category_id] ?? 0) + $weight;
             }
 
-            // Score brands
+            // Score brands (HIGH PRIORITY - 3x weight)
             if ($product->brand) {
-                $brandScores[$product->brand] = ($brandScores[$product->brand] ?? 0) + $weight;
+                $brandScores[$product->brand] = ($brandScores[$product->brand] ?? 0) + ($weight * 3);
             }
 
-            // Score colors
+            // Score colors (HIGH PRIORITY - 2.5x weight)
             if ($product->color) {
-                $colorScores[$product->color] = ($colorScores[$product->color] ?? 0) + $weight;
+                $colorScores[$product->color] = ($colorScores[$product->color] ?? 0) + ($weight * 2.5);
             }
 
-            // Score sizes
+            // Score sizes (medium priority)
             if ($product->size) {
-                $sizeScores[$product->size] = ($sizeScores[$product->size] ?? 0) + $weight;
+                $sizeScores[$product->size] = ($sizeScores[$product->size] ?? 0) + ($weight * 0.8);
             }
 
-            // Score conditions
+            // Score conditions (lower priority)
             if ($product->condition) {
-                $conditionScores[$product->condition] = ($conditionScores[$product->condition] ?? 0) + $weight;
+                $conditionScores[$product->condition] = ($conditionScores[$product->condition] ?? 0) + ($weight * 0.5);
+            }
+
+            // Extract keywords from product name (HIGH PRIORITY)
+            $words = explode(' ', strtolower($product->name));
+            foreach ($words as $word) {
+                if (strlen($word) > 3) { // Only consider meaningful words
+                    $nameKeywords[$word] = ($nameKeywords[$word] ?? 0) + ($weight * 2);
+                }
             }
         }
 
@@ -331,36 +477,60 @@ class ShopController extends Controller
             ->get();
 
         // Score each candidate based on attribute matching
-        $scoredProducts = $candidates->map(function ($product) use ($categoryScores, $brandScores, $colorScores, $sizeScores, $conditionScores) {
+        $scoredProducts = $candidates->map(function ($product) use ($categoryScores, $brandScores, $colorScores, $sizeScores, $conditionScores, $nameKeywords) {
             $score = 0;
+            $matchedAttributes = [];
 
-            // Category matching
-            $score += $categoryScores[$product->category_id] ?? 0;
-
-            // Brand matching
+            // Brand matching (HIGHEST WEIGHT)
             if ($product->brand && isset($brandScores[$product->brand])) {
-                $score += $brandScores[$product->brand] * 1.5; // Boost brand matches
+                $brandScore = $brandScores[$product->brand];
+                $score += $brandScore;
+                $matchedAttributes['brand'] = $brandScore;
             }
 
-            // Color matching
+            // Color matching (VERY HIGH WEIGHT)
             if ($product->color && isset($colorScores[$product->color])) {
-                $score += $colorScores[$product->color] * 1.2;
+                $colorScore = $colorScores[$product->color];
+                $score += $colorScore;
+                $matchedAttributes['color'] = $colorScore;
             }
 
-            // Size matching
+            // Product name keyword matching (HIGH WEIGHT)
+            $words = explode(' ', strtolower($product->name));
+            foreach ($words as $word) {
+                if (strlen($word) > 3 && isset($nameKeywords[$word])) {
+                    $nameScore = $nameKeywords[$word];
+                    $score += $nameScore;
+                    if (!isset($matchedAttributes['name'])) {
+                        $matchedAttributes['name'] = 0;
+                    }
+                    $matchedAttributes['name'] += $nameScore;
+                }
+            }
+
+            // Category matching (medium weight)
+            $categoryMatchScore = $categoryScores[$product->category_id] ?? 0;
+            if ($categoryMatchScore > 0) {
+                $score += $categoryMatchScore;
+                $matchedAttributes['category'] = $categoryMatchScore;
+            }
+
+            // Size matching (lower weight)
             if ($product->size && isset($sizeScores[$product->size])) {
-                $score += $sizeScores[$product->size] * 0.8;
+                $score += $sizeScores[$product->size];
             }
 
-            // Condition matching
+            // Condition matching (lowest weight)
             if ($product->condition && isset($conditionScores[$product->condition])) {
-                $score += $conditionScores[$product->condition] * 0.5;
+                $score += $conditionScores[$product->condition];
             }
 
             // Small boost for newer products
-            $score += max(0, (30 - $product->created_at->diffInDays()) / 10);
+            $newnessBoost = max(0, (30 - $product->created_at->diffInDays()) / 10);
+            $score += $newnessBoost;
 
             $product->recommendation_score = $score;
+            $product->matched_attributes = $matchedAttributes;
             return $product;
         });
 
@@ -398,5 +568,66 @@ class ShopController extends Controller
         // Enhanced Fallback: Use attribute matching
         $products = $this->getProductsByAttributeMatching($userId, $limit);
         return $products->pluck('id')->toArray();
+    }
+
+    /**
+     * Get recommended products based on recently viewed/clicked items
+     * Uses AI service to find similar products to what the user has viewed
+     */
+    protected function getRecommendedFromViewedProducts($userId, $limit = 8)
+    {
+        // Get recently viewed/clicked products (last 10 interactions)
+        $recentInteractions = Interaction::where('user_id', $userId)
+            ->whereIn('type', ['view', 'click'])
+            ->with('product')
+            ->whereNotNull('product_id')
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+
+        if ($recentInteractions->isEmpty()) {
+            return collect();
+        }
+
+        $recommendedProductIds = collect();
+
+        // Try AI service for each viewed product
+        foreach ($recentInteractions->take(3) as $interaction) {
+            try {
+                $aiServiceUrl = env('AI_SERVICE_URL', 'http://localhost:8000');
+                $response = Http::timeout(5)->post("{$aiServiceUrl}/recommend/similar-items", [
+                    'product_id' => $interaction->product_id,
+                    'limit' => 3
+                ]);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $productIds = $data['product_ids'] ?? [];
+                    $recommendedProductIds = $recommendedProductIds->concat($productIds);
+                }
+            } catch (\Exception $e) {
+                // Continue to next product
+                continue;
+            }
+        }
+
+        // Remove already viewed products
+        $viewedProductIds = $recentInteractions->pluck('product_id')->unique();
+        $recommendedProductIds = $recommendedProductIds->diff($viewedProductIds)->unique();
+
+        if ($recommendedProductIds->isEmpty()) {
+            return collect();
+        }
+
+        // Fetch the recommended products
+        return Product::with('category')
+            ->whereIn('id', $recommendedProductIds->take($limit))
+            ->where('stock', '>', 0)
+            ->get()
+            ->sortBy(function ($product) use ($recommendedProductIds) {
+                return array_search($product->id, $recommendedProductIds->toArray());
+            })
+            ->take($limit)
+            ->values();
     }
 }
