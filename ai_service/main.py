@@ -36,6 +36,17 @@ def for_user(request: RecommendationRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/recommend/brand-category")
+def brand_category(request: RecommendationRequest):
+    if not request.product_id:
+        raise HTTPException(status_code=400, detail="Product ID is required for brand/category recommendations")
+
+    try:
+        product_ids = recommender.get_brand_category_recommendations(request.product_id, request.limit)
+        return {"product_ids": product_ids}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

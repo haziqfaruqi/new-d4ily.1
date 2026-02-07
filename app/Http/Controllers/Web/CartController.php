@@ -187,6 +187,7 @@ class CartController extends Controller
             'shipping_postcode' => 'required|string',
             'shipping_state' => 'required|string',
             'payment_method' => 'required|string|in:toyyibpay,bank_transfer',
+            'payment_proof' => 'required_if:payment_method,bank_transfer|nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
         ]);
 
         // Store address as JSON to handle commas in street address
@@ -202,10 +203,20 @@ class CartController extends Controller
         $shippingAddress = json_encode($shippingAddressData);
 
         try {
+            // Handle payment proof upload for bank transfer
+            $paymentProofPath = null;
+            if ($request->payment_method === 'bank_transfer' && $request->hasFile('payment_proof')) {
+                $file = $request->file('payment_proof');
+                $filename = time() . '_' . uniqid() . '_payment_proof.' . $file->getClientOriginalExtension();
+                $file->move(public_path('uploads/payment-proofs'), $filename);
+                $paymentProofPath = '/uploads/payment-proofs/' . $filename;
+            }
+
             // Calculate totals
             $subtotal = $cart->items->sum(fn($item) => $item->price * $item->quantity);
             $shipping = 5.00;
-            $tax = $subtotal * 0.08;
+            // Fixed tax of RM2.00 per product item
+            $tax = $cart->items->count() * 2.00;
             $total = $subtotal + $shipping + $tax;
 
             // Create order
@@ -215,6 +226,7 @@ class CartController extends Controller
                 'total_price' => $total,
                 'shipping_address' => $shippingAddress,
                 'payment_method' => $request->payment_method,
+                'payment_proof' => $paymentProofPath,
                 'subtotal' => $subtotal,
                 'tax' => $tax,
                 'shipping' => $shipping,

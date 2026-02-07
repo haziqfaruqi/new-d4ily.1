@@ -7,12 +7,6 @@
             <div class="hidden md:flex items-center gap-6 text-base font-medium text-zinc-600">
                 <a href="{{ route('landing') }}" class="transition-colors hover:text-zinc-900">Home</a>
                 <a href="{{ route('shop.index') }}" class="transition-colors hover:text-zinc-900">Shop</a>
-                @auth
-                    <a href="{{ route('shop.recommendations') }}" class="transition-colors hover:text-zinc-900 flex items-center gap-1.5">
-                        <i data-lucide="sparkles" class="w-4 h-4"></i>
-                        For You
-                    </a>
-                @endauth
             </div>
         </div>
         <div class="flex items-center gap-4">
@@ -47,10 +41,6 @@
                         <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
                             <i data-lucide="user" class="w-4 h-4"></i>
                             My Profile
-                        </a>
-                        <a href="{{ route('shop.recommendations') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            Recommendations
                         </a>
                         <a href="{{ route('order.history') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
                             <i data-lucide="clock" class="w-4 h-4"></i>

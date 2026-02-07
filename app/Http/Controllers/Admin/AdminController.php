@@ -26,17 +26,52 @@ class AdminController extends Controller
 
     public function inventory()
     {
-        $products = Product::with('category')->paginate(10);
+        $products = Product::with('category')->latest()->paginate(10);
         $categories = Category::all();
 
-        return view('admin.inventory', compact('products', 'categories'));
+        // Get inventory statistics
+        $stats = [
+            'total_products' => Product::count(),
+            'available_products' => Product::where('is_available', true)->count(),
+            'sold_products' => Product::where('is_available', false)->count(),
+            'total_value' => Product::where('is_available', true)->sum('price'),
+            'low_stock_categories' => Category::withCount('products')
+                ->get()
+                ->map(function($category) {
+                    return [
+                        'name' => $category->name,
+                        'count' => $category->products_count,
+                        'available' => Product::where('category_id', $category->id)
+                            ->where('is_available', true)
+                            ->count()
+                    ];
+                })
+                ->sortByDesc('count')
+                ->take(5),
+        ];
+
+        // Get recent products
+        $recentProducts = Product::with('category')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('admin.inventory', compact('products', 'categories', 'stats', 'recentProducts'));
     }
 
     public function orders()
     {
         $orders = Order::with('user', 'items.product')->latest()->paginate(15);
 
-        return view('admin.orders', compact('orders'));
+        // Get order statistics
+        $stats = [
+            'total_orders' => Order::count(),
+            'pending_orders' => Order::where('status', 'pending')->count(),
+            'delivered_orders' => Order::where('status', 'delivered')->count(),
+            'total_revenue' => Order::where('status', '!=', 'cancelled')->sum('total_price'),
+        ];
+
+        return view('admin.orders', compact('orders', 'stats'));
     }
 
     public function customers()
@@ -62,7 +97,6 @@ class AdminController extends Controller
             'color' => 'required|string',
             'images' => 'nullable|array',
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'featured' => 'boolean',
         ]);
 
         // Handle multiple image uploads - filter out null/empty values
@@ -93,58 +127,72 @@ class AdminController extends Controller
 
     public function updateProduct(Request $request, $id)
     {
-        $product = Product::findOrFail($id);
+        try {
+            \Log::info('=== UPDATE PRODUCT START ===');
+            \Log::info('Request all data:', $request->all());
 
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'condition' => 'required|in:new,like new,good,fair,poor',
-            'size' => 'required|string',
-            'brand' => 'required|string',
-            'color' => 'required|string',
-            'images' => 'nullable|array',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'existing_images' => 'nullable|array',
-            'featured' => 'boolean',
-        ]);
+            $product = Product::findOrFail($id);
+            \Log::info('Product found:', ['id' => $product->id, 'name' => $product->name]);
 
-        // Start with existing images that weren't removed
-        $existingImages = $request->input('existing_images');
-        if (is_string($existingImages)) {
-            $existingImages = json_decode($existingImages, true) ?? [];
-        }
-        $images = $existingImages ?? [];
+            $validated = $request->validate([
+                'category_id' => 'required|exists:categories,id',
+                'name' => 'required|string|max:255',
+                'description' => 'required|string',
+                'price' => 'required|numeric|min:0',
+                'condition' => 'required|in:new,like new,good,fair,poor',
+                'size' => 'required|string',
+                'brand' => 'required|string',
+                'color' => 'required|string',
+                'images' => 'nullable|array',
+                'existing_images' => 'nullable|string',
+            ]);
 
-        // Delete removed images from filesystem
-        foreach ($product->images as $oldImage) {
-            if (!in_array($oldImage, $images) && file_exists(public_path($oldImage))) {
-                unlink(public_path($oldImage));
+            \Log::info('Validation passed. Validated data:', $validated);
+
+            // Start with existing images that weren't removed
+            $existingImages = $request->input('existing_images');
+            if (is_string($existingImages)) {
+                $existingImages = json_decode($existingImages, true) ?? [];
             }
-        }
+            $images = $existingImages ?? [];
 
-        // Add new images - filter out null/empty values
-        if ($request->hasFile('images')) {
-            $uploadedFiles = array_filter($request->file('images'), function($file) {
-                return $file !== null && $file->isValid();
-            });
-
-            foreach ($uploadedFiles as $image) {
-                if (count($images) < 4) {
-                    $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
-                    $image->move(public_path('uploads/products'), $filename);
-                    $images[] = '/uploads/products/' . $filename;
+            // Delete removed images from filesystem
+            foreach ($product->images as $oldImage) {
+                if (!in_array($oldImage, $images) && file_exists(public_path($oldImage))) {
+                    unlink(public_path($oldImage));
                 }
             }
+
+            // Add new images - filter out null/empty values
+            if ($request->hasFile('images')) {
+                $uploadedFiles = array_filter($request->file('images'), function($file) {
+                    return $file !== null && $file->isValid();
+                });
+
+                foreach ($uploadedFiles as $image) {
+                    if (count($images) < 4) {
+                        $filename = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                        $image->move(public_path('uploads/products'), $filename);
+                        $images[] = '/uploads/products/' . $filename;
+                    }
+                }
+            }
+            $validated['images'] = $images;
+
+            $validated['stock'] = 1; // All products have stock of 1
+
+            \Log::info('About to update product with:', $validated);
+            $product->update($validated);
+            \Log::info('Product updated successfully');
+
+            // Preserve page number if provided
+            $page = $request->input('page', 1);
+            return redirect()->route('admin.inventory', ['page' => $page])->with('success', 'Product updated successfully!');
+        } catch (\Exception $e) {
+            \Log::error('Product update failed: ' . $e->getMessage());
+            \Log::error('Exception trace:', ['trace' => $e->getTraceAsString()]);
+            return back()->withInput()->with('error', 'Failed to update product: ' . $e->getMessage());
         }
-        $validated['images'] = $images;
-
-        $validated['stock'] = 1; // All products have stock of 1
-
-        $product->update($validated);
-
-        return redirect()->route('admin.inventory')->with('success', 'Product updated successfully!');
     }
 
     public function deleteProduct($id)
@@ -152,7 +200,27 @@ class AdminController extends Controller
         $product = Product::findOrFail($id);
         $product->delete();
 
-        return redirect()->route('admin.inventory')->with('success', 'Product deleted successfully!');
+        // Preserve page number if provided
+        $page = request()->input('page', 1);
+        return redirect()->route('admin.inventory', ['page' => $page])->with('success', 'Product deleted successfully!');
+    }
+
+    public function editProduct($id)
+    {
+        $product = Product::with('category')->findOrFail($id);
+
+        return response()->json([
+            'id' => $product->id,
+            'name' => $product->name,
+            'brand' => $product->brand,
+            'description' => $product->description,
+            'category_id' => $product->category_id,
+            'price' => $product->price,
+            'condition' => $product->condition,
+            'size' => $product->size,
+            'color' => $product->color,
+            'images' => $product->images ?? [],
+        ]);
     }
 
     public function toggleAvailability(Request $request, $id)

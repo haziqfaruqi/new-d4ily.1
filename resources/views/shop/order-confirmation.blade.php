@@ -103,10 +103,42 @@
                         </div>
                         @endif
                     @else
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-4">
-                            <p class="text-sm text-yellow-800">
-                                <i data-lucide="info" class="w-4 h-4 inline mr-2"></i>
-                                Please complete your payment via bank transfer. The order will be processed once payment is confirmed.
+                        <!-- Bank Transfer Details -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-md p-4 mt-4">
+                            <h4 class="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                                <i data-lucide="building-2" class="w-4 h-4"></i>
+                                Bank Transfer Details
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-blue-700">Bank Name:</span>
+                                    <span class="text-blue-900">Maybank</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-blue-700">Account Name:</span>
+                                    <span class="text-blue-900">D4ily Thrift Shop</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-blue-700">Account Number:</span>
+                                    <span class="text-blue-900 font-mono">1234567890123</span>
+                                </div>
+                            </div>
+                            @if($order->payment_proof)
+                            <div class="mt-4 pt-4 border-t border-blue-200">
+                                <p class="text-sm text-blue-900 font-medium mb-2">
+                                    <i data-lucide="check-circle" class="w-4 h-4 inline mr-1"></i>
+                                    Payment Receipt Uploaded
+                                </p>
+                                <a href="{{ asset($order->payment_proof) }}" target="_blank"
+                                   class="text-sm text-blue-600 hover:text-blue-800 underline flex items-center gap-1">
+                                    <i data-lucide="eye" class="w-4 h-4"></i>
+                                    View Uploaded Receipt
+                                </a>
+                            </div>
+                            @endif
+                            <p class="text-xs text-blue-700 mt-3">
+                                <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+                                Your order will be processed once the payment is verified.
                             </p>
                         </div>
                     @endif

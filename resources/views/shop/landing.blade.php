@@ -48,21 +48,21 @@
     @include('partials.navigation')
 
     <!-- Hero Section -->
-    <section class="relative w-full py-20 sm:py-32 border-t-[12px] border-dashed border-[#D65A48] text-stone-800" style="
+    <section class="relative w-full py-20 sm:py-32 border-t-[12px] border-dashed border-[#c53131] text-stone-800" style="
         background-color: #CBBFA2;
         background-image: repeating-linear-gradient(
         90deg,
-        #a1b26c 0px,
-        #a1b26c 50px,
-        #94d6f2 50px,
-        #94d6f2 100px
+        #a6af89 0px,
+        #a6af89 40px,
+        #d5fdff 40px,
+        #d5fdff 100px
         );
     ">
         <div class="relative z-10 px-6 sm:px-8 lg:px-12">
             <div class="max-w-4xl mx-auto text-center">
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
                     Sustainable Style,<br>
-                    <span style="color: #D65A48;">Rediscovered</span>
+                    <span style="color: #c53131;">Rediscovered</span>
                 </h1>
                 <p class="text-xl sm:text-2xl mb-8 max-w-3xl mx-auto text-stone-700">
                     Discover unique vintage treasures and give pre-loved fashion a new life.
@@ -134,7 +134,7 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
                 <a href="{{ route('shop.index', ['category' => 1]) }}" class="group">
                     <div
                         class="category-card bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
@@ -153,17 +153,38 @@
                     <div
                         class="category-card bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
                         <i data-lucide="trousers" class="w-10 h-10 text-blue-700 mb-3"></i>
-                        <h3 class="font-semibold text-blue-900">Bottoms</h3>
+                        <h3 class="font-semibold text-blue-900">Trousers</h3>
                     </div>
                 </a>
                 <a href="{{ route('shop.index', ['category' => 4]) }}" class="group">
+                    <div
+                        class="category-card bg-gradient-to-br from-red-100 to-red-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
+                        <i data-lucide="layers" class="w-10 h-10 text-red-700 mb-3"></i>
+                        <h3 class="font-semibold text-red-900">Set</h3>
+                    </div>
+                </a>
+                <a href="{{ route('shop.index', ['category' => 5]) }}" class="group">
+                    <div
+                        class="category-card bg-gradient-to-br from-rose-100 to-rose-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
+                        <i data-lucide="shirt" class="w-10 h-10 text-rose-700 mb-3"></i>
+                        <h3 class="font-semibold text-rose-900">Dress</h3>
+                    </div>
+                </a>
+                <a href="{{ route('shop.index', ['category' => 6]) }}" class="group">
+                    <div
+                        class="category-card bg-gradient-to-br from-violet-100 to-violet-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
+                        <i data-lucide="triangle" class="w-10 h-10 text-violet-700 mb-3"></i>
+                        <h3 class="font-semibold text-violet-900">Skirt</h3>
+                    </div>
+                </a>
+                <a href="{{ route('shop.index', ['category' => 7]) }}" class="group">
                     <div
                         class="category-card bg-gradient-to-br from-green-100 to-green-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
                         <i data-lucide="footprints" class="w-10 h-10 text-green-700 mb-3"></i>
                         <h3 class="font-semibold text-green-900">Footwear</h3>
                     </div>
                 </a>
-                <a href="{{ route('shop.index', ['category' => 5]) }}" class="group">
+                <a href="{{ route('shop.index', ['category' => 8]) }}" class="group">
                     <div
                         class="category-card bg-gradient-to-br from-purple-100 to-purple-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
                         <i data-lucide="gem" class="w-10 h-10 text-purple-700 mb-3"></i>
