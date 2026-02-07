@@ -45,19 +45,18 @@ class ShopController extends Controller
 
         // Get recommended products based on viewed/clicked items (for logged-in users)
         $recommendedProducts = collect();
-        if (auth()->check() && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price'])) {
-            $recommendedProducts = $this->getRecommendedFromViewedProducts(auth()->id(), 8);
-        }
-
-        // Content-based filtering: get personalized products for logged-in users
         $personalizedProductIds = [];
         $personalizedProducts = [];
         $showPersonalizedLabel = false;
 
         if (auth()->check() && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price'])) {
+            // Single call to get personalized products - use this for both recommendations and sorting
             $personalizedProducts = $this->getProductsByAttributeMatching(auth()->id(), 20);
             $personalizedProductIds = $personalizedProducts->pluck('id')->toArray();
             $showPersonalizedLabel = !empty($personalizedProductIds);
+
+            // Use top 8 from personalized for "recommended products" section
+            $recommendedProducts = $personalizedProducts->take(8);
         }
 
         // Sort
@@ -115,13 +114,7 @@ class ShopController extends Controller
             });
         }
 
-        // Get cart data for navigation
-        $cart = null;
-        if (auth()->check()) {
-            $cart = \App\Models\Cart::with('items.product')->where('user_id', auth()->id())->first();
-        }
-
-        return view('shop.index', compact('products', 'categories', 'cart', 'showPersonalizedLabel', 'personalizedProducts', 'recommendedProducts'));
+        return view('shop.index', compact('products', 'categories', 'showPersonalizedLabel', 'personalizedProducts', 'recommendedProducts'));
     }
 
     public function show($id)
@@ -149,13 +142,7 @@ class ShopController extends Controller
                 ->exists();
         }
 
-        // Get cart data for navigation
-        $cart = null;
-        if (auth()->check()) {
-            $cart = \App\Models\Cart::with('items.product')->where('user_id', auth()->id())->first();
-        }
-
-        return view('shop.product', compact('product', 'sameBrandProducts', 'sameCategoryProducts', 'isWishlisted', 'cart'));
+        return view('shop.product', compact('product', 'sameBrandProducts', 'sameCategoryProducts', 'isWishlisted'));
     }
     public function recommendations(Request $request)
     {
@@ -396,13 +383,22 @@ class ShopController extends Controller
     /**
      * Get products based on attribute matching (color, size, brand, category)
      * Uses weighted scoring from interaction history with emphasis on brand, name, and color
+     * Optimized with eager loading and single query
      */
     protected function getProductsByAttributeMatching($userId, $limit = 8)
     {
-        // Get user's interaction history with weights (prioritize purchases and cart additions)
+        // Use a cache key for this user's recommendations
+        $cacheKey = "user_recommendations_{$userId}";
+
+        // Try to get from cache first (5 minute cache)
+        $cached = cache()->get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        // Get user's interaction history with weights - single optimized query
         $interactions = Interaction::where('user_id', $userId)
             ->withWeights()
-            ->with('product')
             ->whereNotNull('product_id')
             ->orderBy('created_at', 'desc')
             ->take(50)
@@ -410,13 +406,25 @@ class ShopController extends Controller
 
         if ($interactions->isEmpty()) {
             // No history, return latest products
-            return Product::with('category')
+            $products = Product::with('category')
                 ->available()
                 ->where('stock', '>', 0)
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get();
+
+            cache()->put($cacheKey, $products, 300); // Cache for 5 minutes
+            return $products;
         }
+
+        // Get all product IDs in one query
+        $productIds = $interactions->pluck('product_id')->unique()->filter()->toArray();
+
+        // Get all referenced products in one query with eager loading
+        $viewedProducts = Product::with('category')
+            ->whereIn('id', $productIds)
+            ->get()
+            ->keyBy('id');
 
         // Extract preference weights from interactions
         $categoryScores = [];
@@ -429,7 +437,7 @@ class ShopController extends Controller
         $viewedProductIds = [];
 
         foreach ($interactions as $interaction) {
-            $product = $interaction->product;
+            $product = $viewedProducts->get($interaction->product_id);
             if (!$product) continue;
 
             $viewedProductIds[] = $product->id;
@@ -535,10 +543,15 @@ class ShopController extends Controller
         });
 
         // Sort by score and return top results
-        return $scoredProducts
+        $result = $scoredProducts
             ->sortByDesc('recommendation_score')
             ->take($limit)
             ->values();
+
+        // Cache the result for 5 minutes
+        cache()->put($cacheKey, $result, 300);
+
+        return $result;
     }
 
     /**

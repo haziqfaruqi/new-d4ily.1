@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\ViewComposers\CartComposer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register cart composer for shop views
+        View::composer([
+            'shop.*',
+            'partials.navigation',
+        ], CartComposer::class);
+
         // Function to get cart count that filters unavailable products
         if (!function_exists('getCartCount')) {
             function getCartCount()

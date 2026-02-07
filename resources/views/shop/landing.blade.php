@@ -138,7 +138,7 @@
                 <a href="{{ route('shop.index', ['category' => 1]) }}" class="group">
                     <div
                         class="category-card bg-gradient-to-br from-amber-100 to-amber-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
-                        <i data-lucide="jacket" class="w-10 h-10 text-amber-700 mb-3"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-amber-700 mb-3"><path d="M3 6h18"/><path d="M3 6v8a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6H3z"/><path d="M15 6v8a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6h-6z"/><path d="M12 6v14"/></svg>
                         <h3 class="font-semibold text-amber-900">Outerwear</h3>
                     </div>
                 </a>
@@ -152,7 +152,7 @@
                 <a href="{{ route('shop.index', ['category' => 3]) }}" class="group">
                     <div
                         class="category-card bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg p-6 text-center h-32 flex flex-col items-center justify-center">
-                        <i data-lucide="trousers" class="w-10 h-10 text-blue-700 mb-3"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-700 mb-3"><path d="M8 4v16"/><path d="M16 4v16"/><path d="M12 4v16"/><path d="M6 20h12"/><path d="M6 4h12v6H6z"/></svg>
                         <h3 class="font-semibold text-blue-900">Trousers</h3>
                     </div>
                 </a>

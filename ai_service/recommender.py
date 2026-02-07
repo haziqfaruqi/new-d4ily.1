@@ -2,25 +2,67 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from database import get_db_connection
+import threading
+import time
+
+# Global cache for TF-IDF data
+_cache = {
+    'tfidf_matrix': None,
+    'cosine_sim': None,
+    'indices': None,
+    'df': None,
+    'last_refresh': None,
+    'lock': threading.Lock()
+}
+
+# Refresh cache every 5 minutes
+CACHE_TTL = 300  # seconds
+
+def _refresh_cache():
+    """Refresh the cached TF-IDF matrix and similarity scores."""
+    with _cache['lock']:
+        conn = get_db_connection()
+        query = "SELECT id, name, description, brand, category_id FROM products WHERE stock > 0"
+        df = pd.read_sql(query, conn)
+        conn.close()
+
+        if df.empty:
+            return
+
+        # Combine features for similarity
+        df['content'] = df['name'].fillna('') + " " + df['description'].fillna('') + " " + df['brand'].fillna('')
+
+        tfidf = TfidfVectorizer(stop_words='english')
+        tfidf_matrix = tfidf.fit_transform(df['content'])
+
+        cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+
+        indices = pd.Series(df.index, index=df['id']).drop_duplicates()
+
+        # Update cache
+        _cache['tfidf_matrix'] = tfidf_matrix
+        _cache['cosine_sim'] = cosine_sim
+        _cache['indices'] = indices
+        _cache['df'] = df
+        _cache['last_refresh'] = time.time()
+
+def _ensure_cache():
+    """Ensure cache is initialized and fresh."""
+    if _cache['cosine_sim'] is None or _cache['last_refresh'] is None:
+        _refresh_cache()
+    elif time.time() - _cache['last_refresh'] > CACHE_TTL:
+        # Refresh in background if stale, but use old cache for now
+        def refresh_in_background():
+            _refresh_cache()
+        thread = threading.Thread(target=refresh_in_background)
+        thread.start()
 
 def get_content_based_recommendations(product_id, top_n=5):
-    conn = get_db_connection()
-    query = "SELECT id, name, description, brand, category_id FROM products"
-    df = pd.read_sql(query, conn)
-    conn.close()
+    _ensure_cache()
 
-    if df.empty:
-        return []
-
-    # Combine features for similarity
-    df['content'] = df['name'] + " " + df['description'] + " " + df['brand']
-    
-    tfidf = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = tfidf.fit_transform(df['content'])
-
-    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
-
-    indices = pd.Series(df.index, index=df['id']).drop_duplicates()
+    indices = _cache['indices']
+    cosine_sim = _cache['cosine_sim']
+    df = _cache['df']
 
     if product_id not in indices:
         return []
@@ -29,9 +71,9 @@ def get_content_based_recommendations(product_id, top_n=5):
     sim_scores = list(enumerate(cosine_sim[idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
     sim_scores = sim_scores[1:top_n+1]
-    
+
     product_indices = [i[0] for i in sim_scores]
-    
+
     return df['id'].iloc[product_indices].tolist()
 
 def get_brand_category_recommendations(product_id, top_n=5):
@@ -183,7 +225,10 @@ def calculate_string_similarity(str1, str2):
 def get_user_content_recommendations(user_id, top_n=5):
     """
     Get recommendations for a user based on content filtering using their viewed products
+    Optimized to use cached cosine similarity matrix
     """
+    _ensure_cache()
+
     conn = get_db_connection()
 
     # Get products the user has viewed
@@ -210,37 +255,57 @@ def get_user_content_recommendations(user_id, top_n=5):
         cursor.execute(query, (top_n,))
         product_ids = [row[0] for row in cursor.fetchall()]
     else:
-        recommendations = set()
+        # Use cached matrix directly for batch lookups
+        indices = _cache['indices']
+        cosine_sim = _cache['cosine_sim']
+        df = _cache['df']
 
-        # Get similar products for each viewed product
+        recommendations = {}
+
+        # Get similar products for each viewed product using cached matrix
         for product_id in viewed_products:
-            similar = get_content_based_recommendations(product_id, min(3, top_n))
-            recommendations.update(similar)
+            if product_id not in indices:
+                continue
+            idx = indices[product_id]
+            sim_scores = list(enumerate(cosine_sim[idx]))
+            sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+            sim_scores = sim_scores[1:4]  # Top 3 per viewed product
+
+            for i, score in sim_scores:
+                rec_id = df['id'].iloc[i]
+                if rec_id not in recommendations:
+                    recommendations[rec_id] = score
+                else:
+                    recommendations[rec_id] += score  # Boost score if recommended multiple times
 
         # Remove products user has already viewed
         query = "SELECT product_id FROM interactions WHERE user_id = ?"
         cursor.execute(query, (user_id,))
         viewed_ids = set(row[0] for row in cursor.fetchall())
 
-        recommendations = list(recommendations - viewed_ids)
+        for vid in viewed_ids:
+            recommendations.pop(vid, None)
 
-        if len(recommendations) < top_n:
+        # Sort by aggregated score
+        sorted_recs = sorted(recommendations.items(), key=lambda x: x[1], reverse=True)
+        product_ids = [pid for pid, _ in sorted_recs[:top_n]]
+
+        if len(product_ids) < top_n:
             # Get additional popular products to fill the gap
-            query = """
+            placeholders = ','.join(['?' for _ in viewed_ids]) if viewed_ids else '0'
+            query = f"""
                 SELECT p.id
                 FROM products p
                 LEFT JOIN interactions i ON p.id = i.product_id
-                WHERE p.id NOT IN ({})
+                WHERE p.id NOT IN ({placeholders})
                 GROUP BY p.id
                 ORDER BY COUNT(i.id) DESC
                 LIMIT ?
-            """.format(','.join(['?' for _ in viewed_products] + [top_n - len(recommendations)]))
-
-            cursor.execute(query, viewed_products + [top_n - len(recommendations)])
+            """
+            params = list(viewed_ids) + [top_n - len(product_ids)]
+            cursor.execute(query, params)
             additional = [row[0] for row in cursor.fetchall()]
-            recommendations.extend(additional)
-
-        product_ids = recommendations[:top_n]
+            product_ids.extend(additional)
 
     conn.close()
     return product_ids

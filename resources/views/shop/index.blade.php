@@ -152,7 +152,7 @@
             </aside>
 
             <main class="flex-1">
-                @if(isset($recommendedProducts) && $recommendedProducts->count() > 0 && !$request->hasAny(['search', 'category', 'condition', 'min_price', 'max_price', 'sort']))
+                @if(isset($recommendedProducts) && $recommendedProducts->count() > 0 && !request()->hasAny(['search', 'category', 'condition', 'min_price', 'max_price', 'sort']))
                     <div class="mb-8 relative overflow-hidden p-6 rounded-2xl shadow-xl" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 50%, #c53131 100%);">
                         <!-- Decorative Elements -->
                         <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
