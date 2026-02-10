@@ -133,7 +133,7 @@
                                     Price Range
                                 </h4>
                                 <form action="{{ route('shop.index') }}" method="GET" class="space-y-2">
-                                    @foreach(request()->except(['min_price', 'max_price']) as $key => $value)
+                                    @foreach(request()->except(['min_price', 'max_price', 'page']) as $key => $value)
                                         <input type="hidden" name="{{ $key }}" value="{{ $value }}">
                                     @endforeach
                                     <div class="flex gap-2">

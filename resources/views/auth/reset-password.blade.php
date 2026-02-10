@@ -21,11 +21,8 @@
         <!-- Logo -->
         <div class="text-center mb-8">
             <a href="{{ route('shop.index') }}" class="inline-block">
-                <div class="h-12 w-12 rounded-xl bg-zinc-900 flex items-center justify-center mx-auto mb-3">
-                    <span class="text-xl font-bold text-white">d1</span>
-                </div>
-                <h1 class="text-2xl font-bold text-zinc-900">d4ily.1</h1>
-                <p class="text-sm text-zinc-600 mt-1">Vintage Thrift Shop</p>
+                <img src="{{ asset('logo/logo.png') }}" alt="d4ily.1" class="h-24 w-auto mx-auto mb-4">
+                <p class="text-sm font-semibold text-zinc-600 mt-2">Vintage Thrift Shop</p>
             </a>
         </div>
 
