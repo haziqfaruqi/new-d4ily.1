@@ -411,6 +411,17 @@ class CartController extends Controller
         return view('shop.order-history', compact('orders'));
     }
 
+    public function downloadInvoice($orderId)
+    {
+        $order = \App\Models\Order::with(['items.product', 'user'])->where('id', $orderId)->where('user_id', auth()->id())->first();
+
+        if (!$order) {
+            return redirect()->route('order.history')->with('error', 'Order not found');
+        }
+
+        return view('shop.invoice', compact('order'));
+    }
+
     public function toyyibPayCallback(Request $request)
     {
         // Log every callback regardless of status

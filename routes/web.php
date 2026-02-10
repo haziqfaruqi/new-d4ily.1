@@ -45,6 +45,7 @@ Route::middleware(['customer'])->group(function () {
         Route::post('/checkout', [\App\Http\Controllers\Web\CartController::class, 'processCheckout'])->name('checkout.submit');
         Route::get('/order/confirmation/{orderId}', [\App\Http\Controllers\Web\CartController::class, 'orderConfirmation'])->name('order.confirmation');
         Route::get('/order/history', [\App\Http\Controllers\Web\CartController::class, 'orderHistory'])->name('order.history');
+        Route::get('/order/{orderId}/invoice', [\App\Http\Controllers\Web\CartController::class, 'downloadInvoice'])->name('order.invoice');
         Route::put('/order/{orderId}/shipping-address', [\App\Http\Controllers\Web\CartController::class, 'updateShippingAddress'])->name('order.update-shipping');
 
         // Profile routes

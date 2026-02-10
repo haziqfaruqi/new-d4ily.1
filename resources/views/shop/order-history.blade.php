@@ -166,10 +166,12 @@
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                             View Details
                                         </a>
-                                        <button class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-600 text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors border border-zinc-200">
+                                        <a href="{{ route('order.invoice', $order->id) }}"
+                                           class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-600 text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors border border-zinc-200"
+                                           target="_blank">
                                             <i data-lucide="download" class="w-4 h-4"></i>
                                             Invoice
-                                        </button>
+                                        </a>
                                     </div>
                                     <div class="flex items-center gap-4 text-sm">
                                         <div class="flex items-center gap-2">
