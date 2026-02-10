@@ -35,7 +35,7 @@ class ToyyibPayService
                 'billReturnUrl' => route('order.confirmation', $orderData['order_id'] ?? 0),
                 'billExternalReferenceNo' => $orderData['bill_reference_no'],
                 'billTo' => $orderData['bill_to'],
-                'billPayorInfo' => '0', // No payer info required
+                'billPayorInfo' => '1', // Optional - shows and pre-fills email/phone fields
                 'billPriceSetting' => '1', // Fixed amount bill
                 'billChargeToCustomer' => ''
             ];

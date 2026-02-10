@@ -39,7 +39,7 @@
                                     <span class="text-xs text-white/80">Live Dashboard</span>
                                 </div>
                             </div>
-                            <h1 class="text-3xl font-bold text-white mb-2">Welcome back, {{ auth()->user()->name }}!</h1>
+                            <h1 class="text-3xl font-bold text-white mb-2">Welcome back, {{ auth()->user()?->name }}!</h1>
                             <p class="text-sm text-white/80">Here's what's happening with your thrift shop today</p>
                         </div>
                         <a href="{{ route('admin.inventory') }}"

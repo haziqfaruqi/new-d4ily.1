@@ -242,6 +242,36 @@ class CartController extends Controller
                 ]);
             }
 
+            // Clear cart IMMEDIATELY after order items are created to prevent duplicates
+            $cart->items()->delete();
+            $cart->delete();
+
+            // Update user profile with shipping information for future convenience
+            $user = auth()->user();
+
+            // Format address from shipping address data
+            $country = $request->shipping_country ?? 'Malaysia';
+            $formattedAddress = trim("{$request->shipping_street}\n{$request->shipping_city} {$request->shipping_postcode}\n{$request->shipping_state}\n{$country}");
+
+            Log::info('Updating user profile with checkout data', [
+                'user_id' => $user->id,
+                'phone' => $request->shipping_phone,
+                'address' => $formattedAddress,
+                'name' => $request->shipping_name,
+            ]);
+
+            $user->update([
+                'phone' => $request->shipping_phone,
+                'address' => $formattedAddress,
+                'name' => $request->shipping_name, // Update name as well in case it changed
+            ]);
+
+            Log::info('User profile updated successfully', [
+                'user_id' => $user->id,
+                'updated_phone' => $user->phone,
+                'updated_address' => $user->address,
+            ]);
+
             if ($request->payment_method === 'toyyibpay') {
                 // Create ToyyibPay bill
                 $toyyibPay = new ToyyibPayService();
@@ -259,12 +289,12 @@ class CartController extends Controller
                     'bill_name' => 'Order #' . $order->id,
                     'bill_description' => 'Payment for your order at Vintage Thrift Shop',
                     'bill_price' => $priceInSen,
-                    'bill_email' => auth()->user()->email ?? 'customer@example.com',
-                    'bill_phone' => auth()->user()->phone ?? '60123456789',
+                    'bill_email' => auth()->user()?->email ?? 'customer@example.com',
+                    'bill_phone' => $request->shipping_phone ?? auth()->user()?->phone ?? '60123456789',
                     'bill_amount' => $priceInSen, // The actual amount in sen (cents)
                     'bill_content_email' => "Thank you for your purchase! Order #" . $order->id,
                     'bill_reference_no' => $order->id,
-                    'bill_to' => auth()->user()->name ?? 'Customer',
+                    'bill_to' => $request->shipping_name ?? (auth()->user()?->name ?? 'Customer'),
                     'order_id' => $order->id // Pass order ID for return URL
                 ];
 
@@ -308,10 +338,6 @@ class CartController extends Controller
 
                 // Track purchase interactions for recommendations
                 Interaction::logPurchase($order->id);
-
-                // Clear cart after marking products as unavailable
-                $cart->items()->delete();
-                $cart->delete();
 
                 return redirect()->route('order.confirmation', $order->id);
             }

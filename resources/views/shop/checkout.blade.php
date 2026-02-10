@@ -47,14 +47,14 @@
                                 <input type="text" name="shipping_name"
                                     placeholder="Enter your full name"
                                     class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm"
-                                    required value="{{ old('shipping_name', auth()->user()->name ?? '') }}">
+                                    required value="{{ old('shipping_name', auth()->user()?->name ?? '') }}">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-zinc-700 mb-1">Phone Number</label>
                                 <input type="tel" name="shipping_phone"
                                     placeholder="e.g., 012-3456789"
                                     class="w-full px-4 py-2.5 border border-zinc-200 rounded-md focus:outline-none focus:border-zinc-300 focus:ring-0 transition-colors text-sm"
-                                    required value="{{ old('shipping_phone', auth()->user()->phone ?? '') }}">
+                                    required value="{{ old('shipping_phone', auth()->user()?->phone ?? '') }}">
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-zinc-700 mb-1">Street Address</label>
@@ -297,9 +297,20 @@
         // Update cart count on page load
         updateCartCount();
 
-        // Handle form submission for ToyyibPay
-        document.querySelector('form').addEventListener('submit', async function(e) {
+        // Handle form submission
+        const checkoutForm = document.querySelector('form');
+        let isSubmitting = false;
+
+        checkoutForm.addEventListener('submit', async function(e) {
+            // Prevent double submission
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+
             const selectedPaymentMethod = document.querySelector('input[name="payment_method"]:checked');
+            const submitText = document.getElementById('submit-text');
+            const button = e.target.querySelector('button[type="submit"]');
 
             // Validate bank transfer proof if selected
             if (selectedPaymentMethod && selectedPaymentMethod.value === 'bank_transfer') {
@@ -311,19 +322,14 @@
                 }
             }
 
-            if (selectedPaymentMethod && selectedPaymentMethod.value === 'toyyibpay') {
-                e.preventDefault();
-                const submitText = document.getElementById('submit-text');
-                const button = e.target.querySelector('button[type="submit"]');
+            // Mark as submitting and disable button for ALL payment methods
+            isSubmitting = true;
+            submitText.textContent = 'Processing...';
+            button.disabled = true;
+            button.classList.add('opacity-75', 'cursor-not-allowed');
 
-                // Show loading state
-                submitText.textContent = 'Processing...';
-                button.disabled = true;
-                button.classList.add('opacity-75', 'cursor-not-allowed');
-
-                // Continue with normal form submission (Laravel handles CSRF automatically)
-                this.submit();
-            }
+            // Allow form to submit normally
+            return true;
         });
     </script>
 </body>

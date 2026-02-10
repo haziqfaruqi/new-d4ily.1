@@ -227,9 +227,12 @@
                             @php
                                 // Calculate similarity percentage
                                 // Same brand + same category = 100% match
+                                // Same brand + related category = 85% match
                                 // Same brand only = 60-80% based on condition/price match
                                 if ($brandProduct->category_id === $product->category_id) {
                                     $similarityScore = 100;
+                                } elseif (isset($brandProduct->is_related_category) && $brandProduct->is_related_category) {
+                                    $similarityScore = 85;
                                 } else {
                                     // Score ranges from 0-30 (condition + price match)
                                     // Map to 60-80% range
@@ -242,14 +245,20 @@
                                         alt="{{ $brandProduct->name }}"
                                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
 
-                                    <!-- Similarity Badge -->
-                                    <div class="absolute top-3 left-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%); color: white;">
-                                        {{ round($similarityScore) }}% Match
-                                    </div>
+                                    @if($brandProduct->category_id === $product->category_id)
+                                        <!-- Similarity Badge - Only for same category -->
+                                        <div class="absolute top-3 left-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%); color: white;">
+                                            {{ round($similarityScore) }}% Match
+                                        </div>
+                                    @endif
 
                                     @if($brandProduct->category_id === $product->category_id)
                                         <div class="absolute top-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 100%); color: white;">
                                             ✓ Same Category
+                                        </div>
+                                    @elseif(isset($brandProduct->is_related_category) && $brandProduct->is_related_category)
+                                        <div class="absolute top-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 100%); color: white;">
+                                            ✓ {{ $brandProduct->category->name }}
                                         </div>
                                     @endif
 
@@ -294,14 +303,22 @@
 
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
                         @foreach($sameCategoryProducts as $categoryProduct)
+                            @php
+                                $similarityPercent = $categoryProduct->similarity_percent ?? 50;
+                            @endphp
                             <a href="{{ route('shop.product', $categoryProduct->id) }}" class="group transition-all duration-500 transform hover:-translate-y-2">
                                 <div class="relative aspect-[3/4] overflow-hidden rounded-2xl border-2 border-zinc-200 bg-white mb-4 shadow-md hover:shadow-xl transition-all duration-500">
                                     <img src="{{ $categoryProduct->images[0] ?? 'https://via.placeholder.com/300' }}"
                                         alt="{{ $categoryProduct->name }}"
                                         class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110">
 
+                                    <!-- Similarity Badge -->
+                                    <div class="absolute top-3 left-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%); color: white;">
+                                        {{ $similarityPercent }}% Match
+                                    </div>
+
                                     @if($categoryProduct->featured)
-                                        <div class="absolute top-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%); color: white;">
+                                        <div class="absolute top-3 right-3 px-2.5 py-1 text-xs font-bold rounded-lg shadow-md" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
                                             ⭐ Featured
                                         </div>
                                     @endif

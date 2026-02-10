@@ -67,10 +67,10 @@
                 <div
                     class="h-12 w-12 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-lg"
                     style="background: linear-gradient(135deg, #c53131 0%, #D65A48 100%);">
-                    {{ substr(auth()->user()->name, 0, 1) }}
+                    {{ substr(auth()->user()?->name, 0, 1) }}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <p class="text-sm font-bold text-stone-800 truncate">{{ auth()->user()->name }}</p>
+                    <p class="text-sm font-bold text-stone-800 truncate">{{ auth()->user()?->name }}</p>
                     <p class="text-xs text-stone-600">Administrator</p>
                 </div>
                 <i data-lucide="chevron-right" class="w-4 h-4 text-stone-600"></i>

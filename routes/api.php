@@ -58,3 +58,9 @@ Route::get('/recommendations/similar/{productId}', [\App\Http\Controllers\Api\Re
 
 // Interactions (Public/Auth)
 Route::post('/interactions', [\App\Http\Controllers\Api\InteractionController::class, 'store']);
+
+// Get personalized recommendations based on recent views/clicks
+Route::get('/recommendations/personalized', [\App\Http\Controllers\Api\RecommendationController::class, 'personalized']);
+
+// Get similar products based on specific product (same brand + category)
+Route::get('/recommendations/similar-products/{productId}', [\App\Http\Controllers\Api\RecommendationController::class, 'similarProducts']);

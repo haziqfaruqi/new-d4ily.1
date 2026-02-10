@@ -26,13 +26,13 @@
                 <div class="relative group">
                     <button class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-zinc-100 transition-colors">
                         <div class="h-8 w-8 rounded-full bg-zinc-900 flex items-center justify-center text-sm font-bold text-white">
-                            {{ substr(auth()->user()->name, 0, 1) }}
+                            {{ substr(auth()->user()?->name, 0, 1) }}
                         </div>
-                        <span class="text-sm font-medium text-zinc-900 hidden lg-block">{{ auth()->user()->name }}</span>
+                        <span class="text-sm font-medium text-zinc-900 hidden lg-block">{{ auth()->user()?->name }}</span>
                         <i data-lucide="chevron-down" class="w-4 h-4 text-zinc-600"></i>
                     </button>
                     <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-                        @if(auth()->user()->role === 'admin')
+                        @if(auth()->user()?->role === 'admin')
                             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50">
                                 <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                                 Admin Dashboard

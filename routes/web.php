@@ -78,6 +78,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/inventory/{id}/toggle-availability', [\App\Http\Controllers\Admin\AdminController::class, 'toggleAvailability'])->name('inventory.toggle');
     Route::get('/orders', [\App\Http\Controllers\Admin\AdminController::class, 'orders'])->name('orders');
     Route::put('/orders/{id}/status', [\App\Http\Controllers\Admin\AdminController::class, 'updateOrderStatus'])->name('orders.update-status');
+    Route::delete('/orders/{id}', [\App\Http\Controllers\Admin\AdminController::class, 'deleteOrder'])->name('orders.delete');
     Route::get('/customers', [\App\Http\Controllers\Admin\AdminController::class, 'customers'])->name('customers');
 });
 

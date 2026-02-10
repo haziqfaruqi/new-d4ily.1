@@ -349,9 +349,11 @@
                     <div>
                         <label class="block text-sm font-medium text-zinc-700 mb-2">Condition</label>
                         <select name="condition" required class="w-full px-3 py-2 text-sm border border-zinc-300 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900">
+                            <option value="new">New</option>
                             <option value="like new">Like New</option>
                             <option value="good">Good</option>
                             <option value="fair">Fair</option>
+                            <option value="poor">Poor</option>
                         </select>
                     </div>
                     <div>
@@ -672,9 +674,17 @@
         }
 
     function validateFormAndSubmit() {
+            console.log('=== validateFormAndSubmit called ===');
+            console.log('Form action:', document.getElementById('productForm').action);
+            console.log('Form method:', document.getElementById('productForm').method);
+
             if (validateForm()) {
-                return confirm('Save product changes?');
+                console.log('Form validation passed, showing confirm dialog...');
+                const confirmed = confirm('Save product changes?');
+                console.log('User confirmed:', confirmed);
+                return confirmed;
             }
+            console.log('Form validation failed');
             return false;
         }
 

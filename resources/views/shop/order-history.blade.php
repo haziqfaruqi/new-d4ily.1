@@ -166,12 +166,6 @@
                                             <i data-lucide="eye" class="w-4 h-4"></i>
                                             View Details
                                         </a>
-                                        @if($order->status === 'pending')
-                                            <button class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors border border-red-200">
-                                                <i data-lucide="x-circle" class="w-4 h-4"></i>
-                                                Cancel Order
-                                            </button>
-                                        @endif
                                         <button class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-50 text-zinc-600 text-sm font-medium rounded-lg hover:bg-zinc-100 transition-colors border border-zinc-200">
                                             <i data-lucide="download" class="w-4 h-4"></i>
                                             Invoice

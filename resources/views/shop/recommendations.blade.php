@@ -97,7 +97,7 @@
                         <div>
                             <p class="text-xs text-zinc-500">Items Viewed</p>
                             <p class="text-lg font-bold text-zinc-900">
-                                {{ auth()->user()->interactions()->where('type', 'view')->count() }}</p>
+                                {{ auth()->user()?->interactions()->where('type', 'view')->count() }}</p>
                         </div>
                     </div>
                 </div>

@@ -153,7 +153,7 @@
 
             <main class="flex-1">
                 @if(isset($recommendedProducts) && $recommendedProducts->count() > 0 && !request()->hasAny(['search', 'category', 'condition', 'min_price', 'max_price', 'sort']))
-                    <div class="mb-8 relative overflow-hidden p-6 rounded-2xl shadow-xl" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 50%, #c53131 100%);">
+                    <div id="recommendations-container" class="mb-8 relative overflow-hidden p-6 rounded-2xl shadow-xl" style="background: linear-gradient(135deg, #a6af89 0%, #d5fdff 50%, #c53131 100%);">
                         <!-- Decorative Elements -->
                         <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
                         <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
@@ -161,11 +161,26 @@
                         <div class="relative z-10">
                             <div class="flex items-center gap-3 mb-4">
                                 <div class="p-2 bg-white/30 backdrop-blur rounded-lg">
-                                    <i data-lucide="sparkles" class="w-5 h-5 text-stone-800"></i>
+                                    @if(isset($recommendedBasedOn))
+                                        <i data-lucide="sparkles" class="w-5 h-5 text-stone-800"></i>
+                                    @else
+                                        <i data-lucide="star" class="w-5 h-5 text-stone-800"></i>
+                                    @endif
                                 </div>
-                                <h2 class="text-xl font-bold text-white">Recommended For You</h2>
+                                @if(isset($recommendedBasedOn))
+                                    <h2 class="text-xl font-bold text-white">Recommended For You</h2>
+                                @else
+                                    <h2 class="text-xl font-bold text-white">Newest Arrivals</h2>
+                                @endif
                             </div>
-                            <p class="text-sm text-white/90 mb-5">Based on items you've recently viewed</p>
+                            @if(isset($recommendedBasedOn))
+                                <p class="text-sm text-white/90 mb-5">
+                                    Because you {{ $recommendedBasedOn['interaction_label'] }}
+                                    <span class="font-bold">{{ $recommendedBasedOn['product_brand'] }} {{ $recommendedBasedOn['product_category'] ?? '' }}</span>
+                                </p>
+                            @else
+                                <p class="text-sm text-white/90 mb-5">Check out our latest additions to the store</p>
+                            @endif
                             <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                                 @foreach($recommendedProducts as $product)
                                     <a href="{{ route('shop.product', $product->id) }}" class="group">
@@ -256,9 +271,10 @@
     <script>
         lucide.createIcons();
 
-        // Track product click
+        // Track product click and refresh recommendations
         async function trackProductClick(productId) {
             try {
+                // Track the click interaction
                 await fetch('/api/interactions', {
                     method: 'POST',
                     headers: {
@@ -271,9 +287,92 @@
                         type: 'click'
                     })
                 });
+
+                // Refresh with items similar to the clicked product (same category + brand)
+                await refreshRecommendations(productId);
             } catch (error) {
                 console.error('Error tracking click:', error);
             }
+        }
+
+        // Refresh recommendations with items similar to the clicked/viewed product
+        async function refreshRecommendations(productId = null) {
+            try {
+                let url = '/api/recommendations/personalized?limit=8';
+
+                // If a specific product was clicked, get similar items (same brand + category)
+                if (productId) {
+                    url = `/api/recommendations/similar-products/${productId}?limit=8`;
+                }
+
+                const response = await fetch(url);
+                if (response.ok) {
+                    const products = await response.json();
+
+                    if (products && products.length > 0) {
+                        updateRecommendationsSection(products, productId);
+                    }
+                }
+            } catch (error) {
+                console.error('Error refreshing recommendations:', error);
+            }
+        }
+
+        // Update the recommendations section with new products
+        function updateRecommendationsSection(products, basedOnProductId = null) {
+            const recommendationsContainer = document.getElementById('recommendations-container');
+
+            if (!recommendationsContainer) {
+                console.log('Recommendations container not found');
+                return;
+            }
+
+            // Update section title based on whether we have a specific product
+            const titleElement = recommendationsContainer.querySelector('h2');
+            const descElement = recommendationsContainer.querySelector('p');
+
+            if (basedOnProductId && titleElement && descElement) {
+                titleElement.textContent = 'Similar Items You Might Like';
+                descElement.textContent = 'Based on the item you just clicked';
+            }
+
+            // Clear existing products
+            const productsGrid = recommendationsContainer.querySelector('.grid');
+            if (!productsGrid) return;
+
+            productsGrid.innerHTML = '';
+
+            // Add new products
+            products.forEach(product => {
+                const productHTML = `
+                    <a href="/shop/product/${product.id}" class="group">
+                        <div class="relative aspect-[3/4] overflow-hidden rounded-xl border-2 border-white/30 bg-white mb-2 shadow-lg hover:shadow-2xl transition-all duration-300">
+                            <img src="${product.images[0] || 'https://via.placeholder.com/300'}"
+                                 alt="${product.name}"
+                                 class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                            <div class="absolute bottom-2 right-2 px-2 py-1 text-xs font-bold rounded-lg backdrop-blur bg-white/90 text-stone-800 border border-white/50 shadow-sm">
+                                ${product.condition ? product.condition.charAt(0).toUpperCase() + product.condition.slice(1) : ''}
+                            </div>
+                        </div>
+                        <h3 class="text-xs font-bold text-white group-hover:text-stone-800 transition-colors line-clamp-2 leading-tight">
+                            ${product.name}
+                        </h3>
+                        <p class="text-sm font-bold text-white mt-0.5">RM${parseFloat(product.price).toFixed(2)}</p>
+                    </a>
+                `;
+                productsGrid.innerHTML += productHTML;
+            });
+
+            // Reinitialize lucide icons
+            lucide.createIcons();
+
+            // Add animation effect
+            recommendationsContainer.classList.add('animate-pulse');
+            setTimeout(() => {
+                recommendationsContainer.classList.remove('animate-pulse');
+            }, 500);
+
+            console.log(`Updated recommendations with ${products.length} products based on product ${basedOnProductId}`);
         }
 
         // Update cart count

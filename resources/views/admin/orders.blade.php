@@ -163,10 +163,33 @@
                                                                     </div>
                                                                 </td>
                                                                 <td class="px-5 py-4">
-                                                                    <div class="flex items-center gap-1">
-                                                                        <i data-lucide="package" class="w-4 h-4 text-zinc-400"></i>
-                                                                        <span class="text-zinc-700">{{ $order->items->count() }} items</span>
+                                                                    <div class="flex -space-x-2 overflow-hidden">
+                                                                        @foreach($order->items->take(3) as $item)
+                                                                            @if($item->product && $item->product->images && count($item->product->images) > 0)
+                                                                                <div class="relative group">
+                                                                                    <img src="{{ $item->product->images[0] }}"
+                                                                                         alt="{{ $item->product->name }}"
+                                                                                         class="inline-block h-10 w-10 rounded-full object-cover ring-2 ring-white cursor-pointer hover:z-10 hover:ring-[#c53131] transition-all"
+                                                                                         onmouseover="this.nextElementSibling.classList.remove('hidden')"
+                                                                                         onmouseout="this.nextElementSibling.classList.add('hidden')">
+                                                                                    <div class="hidden absolute left-12 top-0 z-50 bg-white px-3 py-2 rounded-lg shadow-xl border border-zinc-200 min-w-[200px]">
+                                                                                        <p class="text-sm font-semibold text-zinc-900">{{ $item->product->name }}</p>
+                                                                                        <p class="text-xs text-zinc-500">Qty: {{ $item->quantity }} × RM{{ number_format($item->price, 2) }}</p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            @endif
+                                                                        @endforeach
+                                                                        @if($order->items->count() > 3)
+                                                                            <div class="h-10 w-10 rounded-full bg-zinc-100 ring-2 ring-white flex items-center justify-center text-xs font-semibold text-zinc-600">
+                                                                                +{{ $order->items->count() - 3 }}
+                                                                            </div>
+                                                                        @endif
                                                                     </div>
+                                                                    @if($order->items->count() == 1 && $order->items->first()->product)
+                                                                        <p class="text-xs text-zinc-500 mt-1 truncate max-w-[150px]">{{ $order->items->first()->product->name }}</p>
+                                                                    @else
+                                                                        <p class="text-xs text-zinc-500 mt-1">{{ $order->items->count() }} items</p>
+                                                                    @endif
                                                                 </td>
                                                                 <td class="px-5 py-4">
                                                                     <span class="text-lg font-bold text-zinc-900">RM{{ number_format($order->total_price, 2) }}</span>
@@ -188,10 +211,25 @@
                                                                 </td>
                                                                 <td class="px-5 py-4 text-sm text-zinc-500">{{ $order->created_at->format('M d, Y') }}</td>
                                                                 <td class="px-5 py-4 text-right">
-                                                                    <button onclick='viewOrder(@json($order))'
-                                                                        class="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors">
-                                                                        <i data-lucide="eye" class="w-4 h-4"></i>
-                                                                    </button>
+                                                                    <div class="flex items-center justify-end gap-1">
+                                                                        <button onclick='viewOrder(@json($order))'
+                                                                            class="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                                                                            title="View order">
+                                                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                                                        </button>
+                                                                        <form action="{{ route('admin.orders.delete', $order->id) }}"
+                                                                            method="POST"
+                                                                            class="inline"
+                                                                            onsubmit="return confirm('Are you sure you want to delete this order? This action cannot be undone.')">
+                                                                            @csrf
+                                                                            @method('DELETE')
+                                                                            <button type="submit"
+                                                                                class="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                                                                title="Delete order">
+                                                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                                            </button>
+                                                                        </form>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                 @empty
