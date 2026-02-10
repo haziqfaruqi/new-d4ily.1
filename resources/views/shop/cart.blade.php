@@ -224,40 +224,35 @@
             }
 
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                console.log('Removing item:', itemId);
+
                 const response = await fetch(`/cart/remove/${itemId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        'X-CSRF-TOKEN': csrfToken
                     }
                 });
 
+                console.log('Response status:', response.status);
+
                 if (response.ok) {
                     const data = await response.json();
-                    const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
-                    itemElement.style.opacity = '0';
-                    itemElement.style.transform = 'translateX(100%)';
-                    itemElement.style.transition = 'all 0.3s ease';
+                    console.log('Response data:', data);
 
-                    setTimeout(() => {
-                        itemElement.remove();
-                    }, 300);
-
-                    // Update cart count immediately
-                    const cartCountElement = document.getElementById('cart-count');
-                    if (cartCountElement) {
-                        cartCountElement.textContent = data.cart_count || '0';
-                        cartCountElement.style.display = (data.cart_count || 0) > 0 ? 'flex' : 'none';
-                    }
-
+                    // Immediately reload the page to show updated cart
                     showToast('Item removed from cart', 'success');
 
-                    // Refresh page to update totals
+                    // Small delay to show the toast before reload
                     setTimeout(() => {
                         window.location.reload();
-                    }, 500);
+                    }, 300);
                 } else {
+                    console.error('Response not ok:', response.status);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
                     showToast('Failed to remove item from cart', 'error');
                 }
             } catch (error) {
@@ -269,10 +264,15 @@
         // Update cart count on page load
         async function updateCartCount() {
             try {
-                const response = await fetch('/api/cart');
+                const response = await fetch('/api/cart', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 if (response.ok) {
                     const cart = await response.json();
-                    const totalItems = cart.items.reduce((total, item) => total + item.quantity, 0);
+                    const totalItems = cart.items ? cart.items.reduce((total, item) => total + item.quantity, 0) : 0;
                     const cartCountElement = document.getElementById('cart-count');
                     if (cartCountElement) {
                         cartCountElement.textContent = totalItems;
@@ -280,7 +280,8 @@
                     }
                 }
             } catch (error) {
-                console.error('Error updating cart count:', error);
+                // Silently fail - cart count will be updated by server-side rendering
+                console.debug('Cart count update skipped (using server value)');
             }
         }
 

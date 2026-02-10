@@ -14,11 +14,9 @@ class CartComposer
     {
         // Only share cart for authenticated users
         if (auth()->check()) {
-            // Cache cart for 2 minutes to reduce queries
-            $cacheKey = 'user_cart_' . auth()->id();
-            $cart = cache()->remember($cacheKey, 120, function () {
-                return Cart::with('items.product')->where('user_id', auth()->id())->first();
-            });
+            // Don't cache cart - always fetch fresh data
+            // Caching causes stale data when items are added/removed
+            $cart = Cart::with('items.product')->where('user_id', auth()->id())->first();
             $view->with('cart', $cart);
         } else {
             $view->with('cart', null);
