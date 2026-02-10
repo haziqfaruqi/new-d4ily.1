@@ -186,8 +186,11 @@
                         <div class="relative">
                             <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400"></i>
                             <input type="password" id="password" name="password" required
-                                class="w-full pl-11 pr-4 py-3 border-2 border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-stone-800 transition-all"
+                                class="w-full pl-11 pr-12 py-3 border-2 border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-stone-800 transition-all"
                                 placeholder="••••••••">
+                            <button type="button" onclick="togglePassword('password', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                            </button>
                         </div>
                         @error('password')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -200,8 +203,11 @@
                         <div class="relative">
                             <i data-lucide="lock" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400"></i>
                             <input type="password" id="password_confirmation" name="password_confirmation" required
-                                class="w-full pl-11 pr-4 py-3 border-2 border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-stone-800 transition-all"
+                                class="w-full pl-11 pr-12 py-3 border-2 border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-stone-800 transition-all"
                                 placeholder="••••••••">
+                            <button type="button" onclick="togglePassword('password_confirmation', this)" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                            </button>
                         </div>
                     </div>
 
@@ -237,6 +243,22 @@
 
     <script>
         lucide.createIcons();
+
+        function togglePassword(inputId, button) {
+            const input = document.getElementById(inputId);
+            const icon = button.querySelector('i');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+
+            // Re-create the icon
+            lucide.createIcons();
+        }
     </script>
 </body>
 
